@@ -1,0 +1,55 @@
+{
+  "name": "voice_annotation_client2",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.1.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^13.5.0",
+    "@wavesurfer/react": "^1.0.11",
+    "antd": "^5.24.3",
+    "axios": "^1.8.1",
+    "diff": "^8.0.1",
+    "react": "^19.0.0",
+    "react-diff-view": "^3.3.1",
+    "react-diff-viewer": "^3.1.1",
+    "react-dom": "^19.0.0",
+    "react-highlight-words": "^0.21.0",
+    "react-router-dom": "^7.8.2",
+    "react-scripts": "5.0.1",
+    "uuid": "^11.1.0",
+    "wavesurfer-react": "^3.0.4",
+    "wavesurfer.js": "^7.9.5",
+    "web-vitals": "^2.1.4",
+    "zustand": "^5.0.4"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

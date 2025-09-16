@@ -1,0 +1,138 @@
+/* 重置默认样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background-color: #f5f5f5;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.App {
+  height: 100vh;
+  width: 100vw;
+}
+
+/* 主容器布局 */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background-color: white;
+}
+
+/* 左侧音频列表样式 */
+.audio-list-container {
+  width: 580px;
+  height: 100%;
+  border-right: 2px solid #e0e0e0;
+  background-color: #fafafa;
+  overflow-y: auto;
+}
+
+.audio-list-header {
+  padding: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* 右侧内容区域 */
+.content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* 波形图容器 */
+.waveform-container {
+  flex-shrink: 0;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: white;
+}
+
+.waveform-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+/* 标注表格容器 */
+.annotation-container {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background-color: white;
+}
+
+/* 滚动条样式 */
+.audio-list-container::-webkit-scrollbar,
+.annotation-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.audio-list-container::-webkit-scrollbar-track,
+.annotation-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.audio-list-container::-webkit-scrollbar-thumb,
+.annotation-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.audio-list-container::-webkit-scrollbar-thumb:hover,
+.annotation-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .audio-list-container {
+    width: 100%;
+    height: 200px;
+    border-right: none;
+    border-bottom: 2px solid #e0e0e0;
+  }
+  
+  .content-container {
+    height: calc(100vh - 200px);
+  }
+}
+
+/* 加载状态样式 */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  color: #666;
+  font-style: italic;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #999;
+  font-size: 16px;
+}

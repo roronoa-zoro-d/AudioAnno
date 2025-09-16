@@ -1,0 +1,42 @@
+/* App.css */
+.app {
+  display: flex;
+  height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+  margin-left: 250px;
+  overflow-y: auto;
+}
+
+.main-content.collapsed {
+  margin-left: 80px;
+}
+
+/* 页面内容样式 */
+.page-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-content h1 {
+  color: #2c3e50;
+  margin-bottom: 24px;
+  font-weight: 600;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 10px;
+}
+
+.page-content p {
+  color: #555;
+  line-height: 1.6;
+}
