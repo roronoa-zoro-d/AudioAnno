@@ -48,6 +48,17 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
+
+        {/* 新增数据集管理菜单 */}
+        <div className={`nav-group ${isActivePath('/datasetManager') ? 'active' : ''}`}>
+          <div className="nav-title">数据集管理</div>
+          <div className="nav-subitems">
+            <NavLink to="/datasetManager/dataset" className="nav-item">
+              <span className="icon">🗂️</span>
+              {!collapsed && <span>数据集</span>}
+            </NavLink>
+          </div>
+        </div>
       </nav>
     </div>
   );

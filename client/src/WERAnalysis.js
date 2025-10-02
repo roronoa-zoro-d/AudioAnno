@@ -14,3 +14,28 @@ const WERAnalysis = () => {
 };
 
 export default WERAnalysis;
+
+
+
+// import React, { useEffect, useState } from 'react';
+// import AnnoTableConfigPopButton from './AnnoTableConfigPanel';
+
+
+// const WERAnalysis = ({ dataList }) => {
+//   const [columns, setColumns] = useState([]);
+
+//   useEffect(() => {
+//     console.log('Current columns:', columns);
+//   }, [columns]);
+
+//   return (
+//     <div>
+//       <AnnoTableConfigPopButton onConfigChange={setColumns} />
+      
+//     </div>
+//   );
+// };
+
+// export default WERAnalysis;
+
+

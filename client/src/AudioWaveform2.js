@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
+import React, { useRef, useEffect, useState, useCallback , useImperativeHandle, forwardRef} from 'react';
 import WaveSurfer from 'wavesurfer.js';
 import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.esm.js';
 import Hover from 'wavesurfer.js/dist/plugins/hover.esm.js';
@@ -11,12 +11,11 @@ const sortRegionsByStartTime = (regions) => {
   return [...regions].sort((a, b) => a.start - b.start);
 };
 
-const AudioWaveform = forwardRef(({
-    audioUrl,
-    onRegionAdded,
-    onRegionRemoved,
-    onRegionUpdated,
-    onAudioReady,
+const AudioWaveform = forwardRef(({ audioUrl, 
+    onRegionAdded,       // 新增回调：区域添加
+    onRegionRemoved,     // 新增回调：区域删除
+    onRegionUpdated,     // 新增回调：区域更新
+    onAudioReady         // 新增回调：音频加载完成
 }, ref) => {
   const waveformRef = useRef(null);
   const spectrogramRef = useRef(null);
@@ -41,6 +40,12 @@ const AudioWaveform = forwardRef(({
   const printRegions = useCallback(() => {
     console.log('当前高亮区域:', stateRef.current.highlightedRegions);
   }, []); // 空依赖，通过ref访问最新状态
+
+//   useEffect(()=>{
+//     console.log('[当前高亮区域-useEffect]: ', highlightedRegions);
+//   },[highlightedRegions])
+
+
 
 
 
@@ -74,7 +79,7 @@ const AudioWaveform = forwardRef(({
         // console.log('当前区域总数:', newRegions.length);
         return sortRegionsByStartTime(newRegions);
     });
-    setActiveRegion(regionObj);
+    // setActiveRegion(regionObj);
     onRegionAdded?.(regionObj);
   }, [onRegionAdded]);
 
@@ -118,8 +123,7 @@ const AudioWaveform = forwardRef(({
     };
     
     setActiveRegion(regionObj);
-
-
+    
     if (e && e.detail === 2) {
       console.log('[监听-区域点击] 双击播放区域:', regionObj);
       e.stopPropagation();

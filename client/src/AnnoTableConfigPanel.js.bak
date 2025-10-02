@@ -1,0 +1,298 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  FormControlLabel,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  Paper,
+  TextField,
+  Typography
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+
+const AnnoTableConfigPanel = ({ onConfigChange }) => {
+  // 预定义字段选项
+  const predefinedColumns = [
+    { id: 'index', label: '序号' },
+    { id: 'timeRange', label: '时间段' },
+    { id: 'text', label: '文本' },
+    { id: 'textEdit', label: '文本编辑' }
+  ];
+
+  // 状态管理
+  const [selectedColumns, setSelectedColumns] = useState(['index', 'timeRange', 'text']);
+  const [customColumns, setCustomColumns] = useState([]);
+  const [newColumn, setNewColumn] = useState({ key: '', label: '', options: '' });
+
+  // 处理预定义列选择
+  const handlePredefinedChange = (id) => {
+    const newSelected = selectedColumns.includes(id)
+      ? selectedColumns.filter(colId => colId !== id)
+      : [...selectedColumns, id];
+    
+    setSelectedColumns(newSelected);
+    notifyConfigChange(newSelected, customColumns);
+  };
+
+  // 添加自定义列
+  const handleAddCustomColumn = () => {
+    const { key, label, options } = newColumn;
+    if (!key || !label || !options) return;
+    
+    // 处理选项
+    const optionsArr = options
+      .split(/[;；,，]/)
+      .map(opt => opt.trim())
+      .filter(Boolean);
+    
+    if (optionsArr.length === 0) return;
+    
+    const newCustomCol = { id: key, label, options: optionsArr };
+    const newCustomColumns = [...customColumns, newCustomCol];
+    
+    setCustomColumns(newCustomColumns);
+    setNewColumn({ key: '', label: '', options: '' });
+    notifyConfigChange(selectedColumns, newCustomColumns);
+  };
+
+  // 删除自定义列
+  const handleDeleteCustomColumn = (id) => {
+    const newCustomColumns = customColumns.filter(col => col.id !== id);
+    const newSelected = selectedColumns.filter(colId => colId !== id);
+    
+    setCustomColumns(newCustomColumns);
+    setSelectedColumns(newSelected);
+    notifyConfigChange(newSelected, newCustomColumns);
+  };
+
+  // 通知配置变化
+  const notifyConfigChange = (selected, custom) => {
+    onConfigChange && onConfigChange({
+      selectedColumns: selected,
+      customColumns: custom
+    });
+  };
+
+  return (
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+      <Typography variant="h6" gutterBottom>
+        表格列配置
+      </Typography>
+      
+      {/* 预定义列选择 */}
+      <Box mb={3}>
+        <Typography variant="subtitle1" gutterBottom>
+          预定义列
+        </Typography>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+          {predefinedColumns.map(col => (
+            <FormControlLabel
+              key={col.id}
+              control={
+                <Checkbox
+                  checked={selectedColumns.includes(col.id)}
+                  onChange={() => handlePredefinedChange(col.id)}
+                />
+              }
+              label={col.label}
+            />
+          ))}
+        </Box>
+      </Box>
+      
+      {/* 自定义列管理 */}
+      <Box mb={3}>
+        <Typography variant="subtitle1" gutterBottom>
+          自定义列
+        </Typography>
+        
+        {/* 添加新自定义列 */}
+        <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 2, alignItems: 'center' }}>
+            <TextField
+              label="字段标识"
+              value={newColumn.key}
+              onChange={e => setNewColumn({...newColumn, key: e.target.value})}
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="显示名称"
+              value={newColumn.label}
+              onChange={e => setNewColumn({...newColumn, label: e.target.value})}
+              fullWidth
+              size="small"
+            />
+            <TextField
+              label="选项（分号或逗号分隔）"
+              value={newColumn.options}
+              onChange={e => setNewColumn({...newColumn, options: e.target.value})}
+              fullWidth
+              size="small"
+            />
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddCustomColumn}
+              fullWidth
+            >
+              添加
+            </Button>
+          </Box>
+        </Paper>
+        
+        {/* 已添加的自定义列 */}
+        {customColumns.length > 0 && (
+          <Paper variant="outlined">
+            <List>
+              {customColumns.map(col => (
+                <ListItem key={col.id}>
+                  <ListItemText
+                    primary={col.label}
+                    secondary={`标识: ${col.id}`}
+                  />
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mr: 2 }}>
+                    {col.options.map((opt, idx) => (
+                      <Chip key={idx} label={opt} size="small" />
+                    ))}
+                  </Box>
+                  <IconButton 
+                    edge="end" 
+                    onClick={() => handleDeleteCustomColumn(col.id)}
+                    aria-label={`删除${col.label}`}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+        )}
+      </Box>
+      
+      {/* 配置预览 */}
+      <Box>
+        <Typography variant="subtitle1" gutterBottom>
+          配置预览
+        </Typography>
+        <Paper variant="outlined" sx={{ p: 2 }}>
+          <Typography variant="body2">
+            <strong>已选预定义列:</strong> {selectedColumns.length > 0 
+              ? selectedColumns.map(id => predefinedColumns.find(c => c.id === id)?.label).join(', ') 
+              : '无'}
+          </Typography>
+          <Typography variant="body2">
+            <strong>已添加自定义列:</strong> {customColumns.length > 0 
+              ? customColumns.map(col => `${col.label}(${col.id})`).join(', ') 
+              : '无'}
+          </Typography>
+        </Paper>
+      </Box>
+    </Paper>
+  );
+};
+
+const AnnoTableConfigPopButton = ({ onConfigChange }) => {
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const buttonRef = useRef(null);
+  
+  const handleOpenConfig = () => {
+    setIsConfigOpen(true);
+    // 设置根元素 aria-hidden
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.setAttribute('aria-hidden', 'true');
+    }
+  };
+  
+  const handleCloseConfig = () => {
+    setIsConfigOpen(false);
+    // 移除根元素 aria-hidden
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.removeAttribute('aria-hidden');
+    }
+  };
+
+  // 焦点管理
+  useEffect(() => {
+    if (!isConfigOpen && buttonRef.current) {
+      // 延迟设置焦点，确保对话框完全关闭
+      setTimeout(() => {
+        buttonRef.current.focus();
+      }, 100);
+    }
+  }, [isConfigOpen]);
+
+  // 组件卸载时确保移除 aria-hidden
+  useEffect(() => {
+    return () => {
+      const rootElement = document.getElementById('root');
+      if (rootElement) {
+        rootElement.removeAttribute('aria-hidden');
+      }
+    };
+  }, []);
+
+  return (
+    <div>
+      {/* 添加配置按钮 */}
+      <Button 
+        ref={buttonRef}
+        variant="contained" 
+        color="primary" 
+        onClick={handleOpenConfig}
+        sx={{ mb: 2 }}
+        aria-label="配置表格列"
+      >
+        配置表格列
+      </Button>
+      
+      {/* 配置面板对话框 */}
+      <Dialog
+        open={isConfigOpen}
+        onClose={handleCloseConfig}
+        fullWidth
+        maxWidth="md"
+        // 焦点管理属性
+        disableRestoreFocus={false}
+        disableAutoFocus={false}
+        disableEnforceFocus={false}
+        PaperProps={{
+          sx: {
+            height: '80vh',
+            maxHeight: '700px',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle>表格列配置</DialogTitle>
+        <DialogContent dividers>
+          <AnnoTableConfigPanel onConfigChange={onConfigChange} />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={handleCloseConfig} 
+            color="primary"
+            autoFocus
+          >
+            关闭
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AnnoTableConfigPopButton;

@@ -12,10 +12,10 @@
  * @returns {Promise<Array>} - 返回标注结果数组 
  * {anno: [{seg:[], text:"你好"}, {}]}
  */
-export const fetchAnnotation = async (audioUrl) => {
+export const fetchAnnotation = async (datasetName, audioUrl) => {
   try {
     const utt = audioUrl.split('/').pop();
-    const response = await fetch(`http://localhost:9801/api/anno/${utt}`);
+    const response = await fetch(`http://localhost:9801/api/anno/${datasetName}/${utt}`);
     const data = await response.json();
     return data.anno;
   } catch (error) {
@@ -48,6 +48,7 @@ export const fetchAnnotation = async (audioUrl) => {
 */
 export const uploadAnnotations = async (utt, annotations) => {
   try {
+    console.log('Uploading annotations...', annotations);
     const response = await fetch(`http://localhost:9801/api/anno/${utt}`, {
       method: 'POST',
       headers: {
@@ -68,7 +69,32 @@ export const uploadAnnotations = async (utt, annotations) => {
   }
 };
 
-
+/**
+ * 上传/更新标注数据
+ * @param {string} username - 用户名
+ * @param {string} datasetName - 数据集名称
+ * @param {string} utt - 音频ID
+ * @param {any} annoData - 标注数据
+ * @returns {Promise<Object>} - 服务端返回结果
+ */
+export const updateAnnotation = async (username, datasetName, utt, annoData) => {
+  try {
+    const response = await fetch('http://localhost:9801/api/update_anno', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        dataset_name: datasetName,
+        utt,
+        anno_data: annoData
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('更新标注失败:', error);
+    return { status: 'error', message: error.message };
+  }
+};
 
 
 
@@ -160,3 +186,46 @@ export const getRegions_annos = (selectedNames, annotations) => {
     }));
   });
 };
+
+
+/**
+ * 获取所有数据集信息
+ * @returns {Promise<Array>} - 返回数据集列表
+ */
+export const fetchDatasetList = async () => {
+  try {
+    const response = await fetch('http://localhost:9801/api/dataset/dataset_infos');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch dataset list:', error);
+    return [];
+  }
+};
+
+
+/**
+ * 激活（加载）指定数据集
+ * @param {string} datasetName - 数据集名称
+ * @returns {Promise<{status: string, message: string}>} - 返回加载结果
+ */
+export const activateDataset = async (datasetName) => {
+  try {
+    const response = await fetch(`http://localhost:9801/api/dataset/load/${datasetName}`, {
+      method: 'POST',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Failed to activate dataset:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+

@@ -28,7 +28,7 @@ const AnnoTable = ({ data = [],
 
   return (
     <TableContainer component={Paper} sx={{ mt: 2, maxHeight: 500 }}>
-      <Table size="small" stickyHeader>
+      <Table size="small" stickyHeader sx={{ tableLayout: 'auto' }} >
         <TableHead>
           <TableRow>
             {columns.map((column) => (

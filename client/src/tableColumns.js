@@ -22,11 +22,10 @@ const formatTimeRange = (start, end) => `${formatTime(start)} - ${formatTime(end
 //  * @param {string} defaultValue - 默认选中值
 //  * @returns {Object} 列配置对象
 //  */
-const createRadioColumn = (key, label, width, options) => {
+const createRadioColumn = (key, label, options) => {
   return {
     key,
     label,
-    width: `${width}%`,
     render: (item, rowIndex, onCellChange) => {
      
       return (
@@ -71,7 +70,7 @@ const createRadioColumn = (key, label, width, options) => {
 const indexColumn = {
   key: 'index',
   label: '序号',
-  width: '5%',
+//   width: '5%',
   render: (_, idx) => (
     <Chip 
       label={idx + 1} 
@@ -85,7 +84,7 @@ const indexColumn = {
 const segmentColumn = {
   key: 'timeRange',
   label: '时间段',
-  width: '25%',
+//   width: '25%',
   render: (item) => (
     <Box sx={{ 
       display: 'flex', 
@@ -106,7 +105,7 @@ const segmentColumn = {
 const textColumn = {
   key: 'text',
   label: '文本',
-  width: '65%',
+//   width: '65%',
   render: (item) => (
     <Typography variant="body1">
       {item.text}
@@ -117,7 +116,7 @@ const textColumn = {
 const textEditColumn = {
   key: 'text',
   label: '文本',
-  width: '65%',
+//   width: '65%',
   render: (item, rowIndex, onTextChange) => (
     <TextField
       variant="outlined"
@@ -141,13 +140,11 @@ const textEditColumn = {
   )
 };
 
-const qualityCheckColumn = createRadioColumn('is_drop', '是否删除', 10, ['保留', '舍弃']);
-
 
 const optNoiseSpeakerColumn = {  // 修正变量名拼写错误
   key: 'voiceType',  // 建议使用更有意义的key
   label: '人声类型',
-  width: '15%',
+//   width: '15%',
   render: (item) => (
     <RadioGroup 
       value={item.voiceType || 'primary'}  // 添加value和onChange处理
@@ -171,58 +168,93 @@ const optNoiseSpeakerColumn = {  // 修正变量名拼写错误
   )
 };
 
-// 根据类型获取列配置
-// export const getColumnsByType = (type = 'default') => {
-//   const columnTypes = {
-//     default: [indexColumn, segmentColumn, textColumn],
-//     asrSegAnno: [indexColumn, segmentColumn,textEditColumn],
-//     vadAnno: [indexColumn, segmentColumn],
-//     withVoiceType: [indexColumn, segmentColumn, textColumn, optNoiseSpeakerColumn],  // 添加包含人声类型的配置
-//     minimal: [segmentColumn, textColumn]  // 可添加其他配置
-//   };
-  
-//   return columnTypes[type] || columnTypes.default;  // 添加默认回退
-// };
+
+
+const qualityCheckColumn = createRadioColumn('is_drop', '是否删除', ['保留', '舍弃']);
+
+
 
 // 在 getColumnsByType 中统一配置宽度
-export const getColumnsByType = (type = 'default') => {
+const getColumnsByType = (type = 'default') => {
   const columnTypes = {
     default: [
-      { ...indexColumn, width: '5%' },
-      { ...segmentColumn, width: '20%' },
-      { ...textColumn, width: '75%' }
+      { ...indexColumn },
+      { ...segmentColumn },
+      { ...textColumn }
     ],
     asrSegAnno: [
-      { ...indexColumn, width: '5%' },
-      { ...segmentColumn, width: '20%' },
-      { ...textEditColumn, width: '75%' }
+      { ...indexColumn },
+      { ...segmentColumn },
+      { ...textEditColumn }
     ],
     vadAnno: [
-      { ...indexColumn, width: '30%' },
-      { ...segmentColumn, width: '70%' }
+      { ...indexColumn },
+      { ...segmentColumn }    
     ],
     vadAnnoCheck: [
-      { ...indexColumn, width: '15%' },
-      { ...segmentColumn, width: '70%' },
-      { ...qualityCheckColumn, width: '25%' }
+      { ...indexColumn },
+      { ...segmentColumn },
+      { ...qualityCheckColumn }
     ],
     withVoiceType: [
-      { ...indexColumn, width: '5%' },
-      { ...segmentColumn, width: '20%' },
-      { ...textColumn, width: '60%' },
-      { ...optNoiseSpeakerColumn, width: '15%' }
+      { ...indexColumn },
+      { ...segmentColumn },
+      { ...textColumn },
+      { ...optNoiseSpeakerColumn }
     ],
     qualityCheck: [
-      { ...indexColumn, width: '5%' },
-      { ...segmentColumn, width: '20%' },
-      { ...textColumn, width: '60%' },
-      { ...qualityCheckColumn, width: '15%' }
+      { ...indexColumn },
+      { ...segmentColumn },
+      { ...textColumn },
+      { ...qualityCheckColumn }
     ],
     minimal: [
-      { ...segmentColumn, width: '30%' },
-      { ...textColumn, width: '70%' }
+      { ...segmentColumn },
+      { ...textColumn }
     ]
   };
   
   return columnTypes[type] || columnTypes.default;
 };
+
+const getColumnsByParams = (params) => { 
+    // params [ ['index', 'timeRange', 'textEdit'], [['emotion', '情绪', '开心 伤心' ]， ['noise', '噪音', '有 无']]
+    // 这个参数包含两个元素，第一个元素是列表，对应基础设置，每个元素对应一个预设列，  第二个元素是一个列表，每个元素对应createRadioColumn里面的值
+    // 现在根据输入参数，创建类似getColumnsByType返回的值
+    const columns = [];
+    const presetMap = {
+        'index': indexColumn,
+        'timeRange': segmentColumn,
+        'text': textColumn,
+        'textEdit': textEditColumn,
+        'optNoiseSpeaker': optNoiseSpeakerColumn,
+        'qualityCheck': qualityCheckColumn
+    };
+    const presetKeys = Object.keys(presetMap);
+    if (Array.isArray(params) && params.length === 2) {
+        const baseCols = params[0];
+        const radioCols = params[1];
+        // 处理基础列
+        baseCols.forEach(colKey => {
+            if (presetKeys.includes(colKey)) {
+                columns.push(presetMap[colKey]);
+            }
+        });
+        // 处理单选列
+        radioCols.forEach(radioCol => {
+            if (Array.isArray(radioCol) && radioCol.length === 3) {
+                const [key, label, optionsStr] = radioCol;
+                const options = optionsStr.split(' ').filter(option => option.trim() !== '');
+                if (key && label && options.length > 0) {
+                    columns.push(createRadioColumn(key, label, options));
+                }
+            }
+        });
+    }
+    return columns;
+}
+
+
+export { getColumnsByType, getColumnsByParams };
+// export { indexColumn, segmentColumn, textColumn, textEditColumn, qualityCheckColumn, optNoiseSpeakerColumn, createRadioColumn };
+

@@ -25,13 +25,13 @@ body {
 }
 
 /* 左侧音频列表样式 */
-.audio-list-container {
+/* .audio-list-container {
   width: 580px;
   height: 100%;
   border-right: 2px solid #e0e0e0;
   background-color: #fafafa;
   overflow-y: auto;
-}
+} */
 
 .audio-list-header {
   padding: 20px;
