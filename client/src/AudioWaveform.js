@@ -5,7 +5,6 @@ import Hover from 'wavesurfer.js/dist/plugins/hover.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 
-
 // 将纯函数定义在组件外部
 const sortRegionsByStartTime = (regions) => {
   return [...regions].sort((a, b) => a.start - b.start);
@@ -17,6 +16,7 @@ const AudioWaveform = forwardRef(({
     onRegionRemoved,
     onRegionUpdated,
     onAudioReady,
+    activeRegionId, // 新增这一行
 }, ref) => {
   const waveformRef = useRef(null);
   const spectrogramRef = useRef(null);
@@ -25,6 +25,8 @@ const AudioWaveform = forwardRef(({
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeRegion, setActiveRegion] = useState(null);
   const [highlightedRegions, setHighlightedRegions] = useState([]);
+
+  
 
   // 使用 ref 存储最新状态
   const stateRef = useRef();
@@ -133,7 +135,9 @@ const AudioWaveform = forwardRef(({
   // 键盘监听删除区域
   const handleKeyDown = useCallback((e) => {
     const { activeRegion, wavesurfer } = stateRef.current;
-    if ((e.key === 'Backspace' || e.key === 'Delete') && activeRegion) {
+    // 支持 Mac 的 Command 键和 Ctrl 键
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+    if (isCtrlOrCmd && (e.key === 'Backspace' || e.key === 'Delete') && activeRegion) {
       console.log('[键盘监听] 删除活动区域:', activeRegion);
       
       const regionsPlugin = wavesurfer?.getActivePlugins().find(
@@ -149,7 +153,7 @@ const AudioWaveform = forwardRef(({
   }, []);
 
 
-  // 初始化 WaveSurfer
+  // WaveSurfer 实例只初始化一次
   useEffect(() => {
     if (!waveformRef.current || !spectrogramRef.current) return;
 
@@ -202,7 +206,6 @@ const AudioWaveform = forwardRef(({
       setWavesurfer(null);
     };
   }, []);
-
   // 加载音频
   useEffect(() => {
     if (wavesurfer && audioUrl) {
@@ -214,6 +217,7 @@ const AudioWaveform = forwardRef(({
 
       const onReady = () => {
         console.log('[音频加载] 音频加载完成');
+        console.log('[音频加载完成] 当前 minPxPerSec:', wavesurfer.options.minPxPerSec);
         setIsReady(true);
         
         const regionsPlugin = wavesurfer.getActivePlugins().find(
@@ -316,13 +320,25 @@ const AudioWaveform = forwardRef(({
     }
   }));
 
+  useEffect(() => {
+    if (activeRegionId) {
+      // 这里根据 activeRegionId 设置激活区域
+      setActiveRegion(prev => {
+        if (prev && prev.id === activeRegionId) return prev;
+        const region = highlightedRegions.find(r => r.id === activeRegionId);
+        return region || null;
+      });
+    }
+  }, [activeRegionId, highlightedRegions]);
 
 
 
+
+  // 在UI中显示
   return (
     <div style={{ width: '100%', padding: '20px' }}>
       <h2>音频波形图</h2>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
         <button onClick={onPlayPause} disabled={!isReady}>
           {isPlaying ? '暂停' : '播放'}
         </button>
@@ -347,6 +363,7 @@ const AudioWaveform = forwardRef(({
           当前活动区域：{activeRegion.start.toFixed(2)}s - {activeRegion.end.toFixed(2)}s
         </div>
       )}
+
     </div>
   );
 });
