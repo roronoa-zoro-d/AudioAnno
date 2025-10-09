@@ -21,6 +21,7 @@ const AudioWaveform = forwardRef(({
 }, ref) => {
   const waveformRef = useRef(null);
   const spectrogramRef = useRef(null);
+  const sliderRef = useRef(null);
   const [wavesurfer, setWavesurfer] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -165,7 +166,7 @@ const AudioWaveform = forwardRef(({
       cursorColor: '#36b9cc',
       cursorWidth: 1,
       height: 200,
-      minPxPerSec: 50,
+      // 不设置  minPxPerSec ，默认展示全部波形
       plugins: [
         RegionsPlugin.create({
           dragSelection: {
@@ -223,10 +224,33 @@ const AudioWaveform = forwardRef(({
       wavesurfer.load(audioUrl);
 
       const onReady = () => {
-        console.log('[音频加载] 音频加载完成');
-        // console.log('[音频加载完成] 当前 minPxPerSec:', wavesurfer.options.minPxPerSec);
         setIsReady(true);
-        
+
+        setTimeout(() => {
+          const duration = wavesurfer.getDuration();
+          const waveEl = waveformRef.current;
+          let waveCanvas = null;
+
+          if (waveEl && waveEl.shadowRoot) {
+            // 在 Shadow DOM 里查找 canvas
+            waveCanvas = waveEl.shadowRoot.querySelector('canvas');
+          } else if (waveEl) {
+            // 兼容旧版本或插件未用 shadowRoot
+            waveCanvas = waveEl.querySelector('canvas');
+          }
+
+          console.log('[调试] waveformRef.current:', waveEl);
+          console.log('[调试] waveCanvas:', waveCanvas);
+          console.log('[调试] duration:', duration);
+
+          if (waveCanvas && duration) {
+            const pxPerSec = waveCanvas.width / duration;
+            console.log(`[调试] 当前每秒音频对应像素点数: ${pxPerSec}`);
+          } else {
+            console.log('[调试] 未获取到canvas宽度或音频时长');
+          }
+        }, 100);
+
         const regionsPlugin = wavesurfer.getActivePlugins().find(
           plugin => plugin instanceof RegionsPlugin
         );
@@ -399,7 +423,22 @@ const AudioWaveform = forwardRef(({
     }
   }, [activeRegionId, highlightedRegions]);
 
+useEffect(() => {
+  const slider = sliderRef.current;
+  if (!slider || !wavesurfer) return;
 
+  const handleInput = (e) => {
+    const minPxPerSec = e.target.valueAsNumber;
+    console.log('[滑块调试] 当前缩放值:', minPxPerSec); // 新增调试输出
+    wavesurfer.zoom(minPxPerSec);
+  };
+
+  slider.addEventListener('input', handleInput);
+
+  return () => {
+    slider.removeEventListener('input', handleInput);
+  };
+}, [wavesurfer]);
 
 
   // 在UI中显示
@@ -432,6 +471,19 @@ const AudioWaveform = forwardRef(({
         
       </div>
 
+      <div style={{ marginTop: '10px' }}>
+        <label style={{ fontSize: '14px', marginRight: '10px' }}>缩放：</label>
+        <input
+          type="range"
+          min="0"
+          max="60"
+          step="10"
+          defaultValue={50}
+          ref={sliderRef}
+          style={{ flex: 1 }}
+          disabled={!isReady}
+        />
+      </div>
     </div>
   );
 });
