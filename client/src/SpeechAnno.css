@@ -48,7 +48,7 @@ body {
 /* 右侧内容区域 */
 .content-container {
   flex: 1;
-  display: flex;
+  /* display: flex; */
   flex-direction: column;
   height: 100%;
   min-height: 0;
@@ -75,6 +75,20 @@ body {
   overflow: auto;
   padding: 20px;
   background-color: white;
+}
+
+/* 确保 content 区及其子项在 flex 布局下能正确收缩，避免被波形画布撑开 */
+.content-container, 
+.waveform-container, 
+.annotation-table-container {
+  min-width: 0;
+}
+
+/* 如果你用 flex 横向布局，确保右侧内容可以收缩 */
+.right-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* 滚动条样式 */

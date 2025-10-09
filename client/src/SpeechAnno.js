@@ -42,6 +42,10 @@ const SpeechAnno = () => {
     message: '',
     severity: 'success'
   });
+  const [audioList, setAudioList] = useState([]);
+  const [audioStates, setAudioStates] = useState({});
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState(null);
 
   // 存储初始标注数据用于比较
   const initialAnnotationsRef = useRef([]);
@@ -56,6 +60,36 @@ const SpeechAnno = () => {
   // 获取表格列配置
   const columns = getColumnsByParams(columnParams);
 
+  //服务器获取数据1.  获取音频列表和音频状态
+  useEffect(() => {
+    const fetchAudioListAndStates = async () => {
+      setAudioLoading(true);
+      setAudioError(null);
+      try {
+        const res = await fetch(`http://localhost:9801/api/dataset/anno_list/${datasetName}/${splitName}`);
+        if (!res.ok) throw new Error('服务器返回错误');
+        const data = await res.json();
+        setAudioList(data.audios || []);
+        setAudioStates(data.state || {});
+      } catch (error) {
+        setAudioError(error.message || '获取音频列表失败');
+      } finally {
+        setAudioLoading(false);
+      }
+    };
+    if (datasetName && splitName) {
+      fetchAudioListAndStates();
+    }
+  }, [datasetName, splitName]);
+
+  // 更新一个音频的标注状态
+  const updateAudioState = useCallback((audioId, newState) => {
+    setAudioStates(prev => ({
+      ...prev,
+      [audioId]: newState
+    }));
+  }, []);
+
   // 点击列表中的音频， 从服务器获取这个音频的标注信息
   const handleSelectAudio = useCallback(async (audioId) => {
     if (!audioId) {
@@ -63,7 +97,7 @@ const SpeechAnno = () => {
       setHasChanges(false); // 重置修改状态
       return;
     }
-
+    console.log('get anno data for ', audioId);
     setLoading(true);
 
     try {
@@ -109,19 +143,10 @@ const SpeechAnno = () => {
     setHasChanges(currentAnnotations !== initialAnnotations);
   }, [audioData]);
 
-  // 表格行点击时， 播放对应区域的音频
-  const handleTableRowClick = useCallback((item) => {
-    if (audioWaveformRef.current) {
-      audioWaveformRef.current.playRegion(item.seg[0] / 1000, item.seg[1] / 1000);
-      setActiveRegionId(item.id);
-    }
-  }, []);
 
-
-
-  // 回调函数 高亮区域初始化
+  // 波形图回调函数1  加载音频后，初始化高亮区域初
   const handleAudioReady = useCallback(() => {
-    console.log('[SpeechAnno] 回调函数handleAudioReady： 音频加载完成');
+    console.log('[SpeechAnno] 回调函数handleAudioReady: 音频加载完成');
     const { audioData } = stateRef.current;
 
     if (audioWaveformRef.current && audioData?.annotationData) {
@@ -138,7 +163,7 @@ const SpeechAnno = () => {
     }
   }, []);
 
-  // 波形图上添加一个区域时回调， 在标注数据中新增一个seg
+  // 波形图回调函数2 波形图上添加一个区域时回调， 在标注数据中新增一个seg
   const handleRegionAdded = useCallback((region) => {
     if (region.id.startsWith('external-')) return;
 
@@ -170,7 +195,7 @@ const SpeechAnno = () => {
     });
   }, []);
 
-  // 区域删除回调
+  // 波形图回调函数3 区域删除回调
   const handleRegionRemoved = useCallback((regionId) => {
     console.log('[SpeechAnno] 删除区域回调 regionId:', regionId);
 
@@ -189,7 +214,7 @@ const SpeechAnno = () => {
     });
   }, []);
 
-  // 区域更新回调
+  // 波形图回调函数4 区域更新回调
   const handleRegionUpdated = useCallback((region) => {
     console.log('[SpeechAnno] 更新区域回调 region:', region);
     setActiveRegionId(region.id);
@@ -216,7 +241,16 @@ const SpeechAnno = () => {
     });
   }, []);
 
-  // 表格单元格变化处理
+
+  // 表格回调函数1  行点击时， 播放对应区域的音频
+  const handleTableRowClick = useCallback((item) => {
+    if (audioWaveformRef.current) {
+      audioWaveformRef.current.playRegion(item.seg[0] / 1000, item.seg[1] / 1000);
+      setActiveRegionId(item.id);
+    }
+  }, []);
+
+  // 表格回调函数2 表格单元格变化时， 更新标注结果
   const handleCellChange = useCallback((rowIndex, key, newValue) => {
     console.log("表格内容发送变化 key=", key, " row=", rowIndex, " ", newValue);
     setAudioData(prev => {
@@ -237,13 +271,15 @@ const SpeechAnno = () => {
     });
   }, []);
 
+
   // 上传标注结果
   const handleUploadAnnotations = useCallback(async () => {
-    if (!audioData || !hasChanges) return;
+    if (!audioData) return;
 
     setIsUploading(true);
 
     try {
+      console.log('上传标注结果');
       // 调用新接口
       const result = await updateAnnotation(
         username,
@@ -251,11 +287,14 @@ const SpeechAnno = () => {
         audioData.audioId,
         audioData.annotationData
       );
-
-      if (result.status === 'success') {
+      console.log('上传标注结果返回:', result);
+      
+      if (result.status === 'success' || result.status === true) {
         // 更新初始标注数据
         initialAnnotationsRef.current = JSON.parse(JSON.stringify(audioData.annotationData));
-
+        if (result.anno_state) {
+          updateAudioState(audioData.audioId, result.anno_state);
+        }
         setSnackbar({
           open: true,
           message: '标注上传成功！',
@@ -274,12 +313,14 @@ const SpeechAnno = () => {
     } finally {
       setIsUploading(false);
     }
-  }, [audioData, hasChanges, username, datasetName]);
+  }, [audioData, username, datasetName,  updateAudioState]);
 
   // 关闭消息提示
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
+
+
 
   return (
     <div className="app-container">
@@ -289,8 +330,10 @@ const SpeechAnno = () => {
           音频列表
         </div>
         <AudioList
-          datasetName={datasetName}
-          splitName={splitName}
+          audioList={audioList}
+          audioStates={audioStates}
+          loading={audioLoading}
+          error={audioError}
           onSelectAudio={handleSelectAudio}
         />
       </div>
@@ -314,6 +357,7 @@ const SpeechAnno = () => {
               onRegionRemoved={handleRegionRemoved}
               onRegionUpdated={handleRegionUpdated}
               onAudioReady={handleAudioReady}
+              activeRegionId={activeRegionId}
               key={audioData.audioId}
             />
           )}
@@ -326,8 +370,8 @@ const SpeechAnno = () => {
             {audioData && !audioData.error && (
               <Button
                 variant="contained"
-                color="primary"
-                disabled={!hasChanges || isUploading}
+                color={hasChanges ? "primary" : "inherit"}
+                disabled={isUploading}
                 onClick={handleUploadAnnotations}
                 sx={{ ml: 2 }}
               >

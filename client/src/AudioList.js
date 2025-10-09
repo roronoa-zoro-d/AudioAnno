@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 // 定义标注状态到颜色的映射
 const STATUS_COLOR_MAP = {
@@ -8,51 +8,18 @@ const STATUS_COLOR_MAP = {
 };
 
 const AudioList = ({
-  datasetName,
-  splitName,
+  audioList,
+  audioStates,
+  loading,
+  error,
   onSelectAudio // 音频选择回调函数
 }) => {
-  const [audioList, setAudioList] = useState([]);
-  const [audioStates, setAudioStates] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [currentSelected, setCurrentSelected] = useState(null);
 
-  // 从服务器获取音频列表和状态
-  useEffect(() => {
-    const loadAudioData = async () => {
-      if (!datasetName || !splitName) return;
 
-      setLoading(true);
-      setError(null);
-
-      try {
-        // 假设接口返回格式为 { audio_list: [...], audio_states: {...} }
-        const res = await fetch(`http://localhost:9801/api/dataset/anno_list/${datasetName}/${splitName}`);
-        if (!res.ok) throw new Error('服务器返回错误');
-        const data = await res.json();
-
-        // 兼容不同后端返回格式
-        setAudioList(Array.isArray(data.audios) ? data.audios : []);
-        setAudioStates(typeof data.state === 'object' && data.state !== null ? data.state : {});
-
-        console.log('✅ 音频数据加载成功');
-      } catch (err) {
-        setError('加载音频数据失败: ' + err.message);
-        setAudioList([]);
-        setAudioStates({});
-        console.error('加载音频数据失败:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAudioData();
-    setCurrentSelected(null); // 切换数据集或子集时重置选中
-  }, [datasetName, splitName]);
 
   const handleAudioClick = (audio) => {
-    setCurrentSelected(audio); // 设置当前选中
+    setCurrentSelected(audio);
     onSelectAudio(audio);
   };
 
@@ -85,7 +52,6 @@ const AudioList = ({
     if (!state) return audio;
 
     return `
-音频ID: ${audio}
 标注状态: ${getStatusLabel(audio)}
 标注者: ${state.annotator || '未分配'}
 审核状态: ${state.check_status === 'checked' ? '已审核' : '未审核'}
@@ -209,7 +175,7 @@ const AudioList = ({
           const status = getAudioStatus(audio);
           const statusColor = getStatusColor(audio);
           const isSelected = currentSelected === audio;
-          const audioState = audioStates[audio];
+
 
           return (
             <li
@@ -262,22 +228,6 @@ const AudioList = ({
                 {getStatusLabel(audio)}
               </span>
 
-              {/* 标注者信息（如果有） */}
-              {audioState?.annotator && (
-                <span style={{
-                  fontSize: '10px',
-                  padding: '1px 4px',
-                  borderRadius: '3px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                  color: '#666',
-                  marginLeft: '4px',
-                  whiteSpace: 'nowrap'
-                }}
-                  title={`标注者: ${audioState.annotator}`}
-                >
-                  {audioState.annotator.substring(0, 3)}
-                </span>
-              )}
 
               {/* 选中指示器 */}
               {isSelected && (
@@ -305,7 +255,7 @@ const AudioList = ({
           padding: '40px 20px',
           fontSize: '14px'
         }}>
-          {datasetName && splitName ? '暂无音频数据' : '请选择数据集和分割'}
+          {'请选择数据集和分割'}
         </div>
       )}
     </div>

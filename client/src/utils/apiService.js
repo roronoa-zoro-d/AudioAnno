@@ -92,6 +92,7 @@ export const updateAnnotation = async (username, datasetName, utt, annoData) => 
     return await response.json();
   } catch (error) {
     console.error('更新标注失败:', error);
+    console.log('更新 username:', username, ' datasetName:', datasetName, ' utt:', utt, ' annoData:', annoData);
     return { status: 'error', message: error.message };
   }
 };

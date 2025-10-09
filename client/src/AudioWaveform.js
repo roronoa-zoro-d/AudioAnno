@@ -4,6 +4,7 @@ import Spectrogram from 'wavesurfer.js/dist/plugins/spectrogram.esm.js';
 import Hover from 'wavesurfer.js/dist/plugins/hover.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
+import Minimap from 'wavesurfer.js/dist/plugins/minimap.esm.js'
 
 // 将纯函数定义在组件外部
 const sortRegionsByStartTime = (regions) => {
@@ -39,10 +40,7 @@ const AudioWaveform = forwardRef(({
 
 //   console.log(`[AudioWaveform] 组件渲染 ${Date.now()}-${Math.random().toString(36).substr(2, 5)}`);
 
-  // 打印当前高亮区域（通过ref访问最新状态）
-  const printRegions = useCallback(() => {
-    console.log('当前高亮区域:', stateRef.current.highlightedRegions);
-  }, []); // 空依赖，通过ref访问最新状态
+
 
 
 
@@ -125,8 +123,9 @@ const AudioWaveform = forwardRef(({
     if (e && e.detail === 2) {
       console.log('[监听-区域点击] 双击播放区域:', regionObj);
       e.stopPropagation();
-      wavesurfer.play(region.start, region.end);
       setIsPlaying(true);
+      wavesurfer.play(region.start, region.end);
+      setIsPlaying(false);
     } else {
       console.log('[监听-区域点击] 单击设置活动区域:', regionObj);
     }
@@ -166,6 +165,7 @@ const AudioWaveform = forwardRef(({
       cursorColor: '#36b9cc',
       cursorWidth: 1,
       height: 200,
+      minPxPerSec: 50,
       plugins: [
         RegionsPlugin.create({
           dragSelection: {
@@ -195,6 +195,13 @@ const AudioWaveform = forwardRef(({
             color: '#333',
           },
         }),
+        // Register the plugin
+        Minimap.create({
+          height: 20,
+          waveColor: '#ddd',
+          progressColor: '#999',
+          // the Minimap takes all the same options as the WaveSurfer itself
+        }),
       ],
     });
 
@@ -217,7 +224,7 @@ const AudioWaveform = forwardRef(({
 
       const onReady = () => {
         console.log('[音频加载] 音频加载完成');
-        console.log('[音频加载完成] 当前 minPxPerSec:', wavesurfer.options.minPxPerSec);
+        // console.log('[音频加载完成] 当前 minPxPerSec:', wavesurfer.options.minPxPerSec);
         setIsReady(true);
         
         const regionsPlugin = wavesurfer.getActivePlugins().find(
@@ -272,6 +279,64 @@ const AudioWaveform = forwardRef(({
     };
   }, [wavesurfer, handleRegionCreated, handleRegionRemoved, handleRegionClicked, handleRegionUpdated, handleKeyDown]);
 
+// // 新增：将 waveform 与 spectrogram 放在同一滚动容器并同步 canvas 宽度/滚动，保证时间轴一致
+//   useEffect(() => {
+//     if (!wavesurfer) return;
+
+//     const syncCanvases = () => {
+//       try {
+//         const waveEl = waveformRef.current;
+//         const specEl = spectrogramRef.current;
+//         if (!waveEl || !specEl) return;
+
+//         const waveCanvas = waveEl.querySelector('canvas');
+//         const specCanvas = specEl.querySelector('canvas');
+//         if (!waveCanvas || !specCanvas) return;
+
+//         // 同步内部像素宽度（device pixels）
+//         if (specCanvas.width !== waveCanvas.width) {
+//           specCanvas.width = waveCanvas.width;
+//         }
+
+//         // 同步 css 宽度（保证在同一滚动容器中视觉一致）
+//         const deviceRatio = window.devicePixelRatio || 1;
+//         const cssWidth = waveCanvas.style.width || `${waveCanvas.width / deviceRatio}px`;
+//         if (specCanvas.style.width !== cssWidth) {
+//           specCanvas.style.width = cssWidth;
+//         }
+
+//         // 如果两者在不同容器，强制同步 scrollLeft；通常它们都在同一 overflow 容器
+//         const waveContainer = waveEl.parentElement;
+//         const specContainer = specEl.parentElement;
+//         if (waveContainer && specContainer && waveContainer !== specContainer) {
+//           specContainer.scrollLeft = waveContainer.scrollLeft;
+//         }
+//       } catch (err) {
+//         // 保持安静，避免抛出影响主流程
+//         // console.warn('[syncCanvases] error', err);
+//       }
+//     };
+
+//     // 绑定事件：ready / zoom / redraw，同时用 ResizeObserver 捕获容器尺寸变化
+//     wavesurfer.on('ready', syncCanvases);
+//     wavesurfer.on('zoom', syncCanvases);
+//     wavesurfer.on('redraw', syncCanvases);
+
+//     const ro = new ResizeObserver(syncCanvases);
+//     if (waveformRef.current) ro.observe(waveformRef.current);
+//     if (spectrogramRef.current) ro.observe(spectrogramRef.current);
+
+//     // 首次同步（给插件一点时间绘制）
+//     const t = setTimeout(syncCanvases, 50);
+
+//     return () => {
+//       clearTimeout(t);
+//       wavesurfer.un('ready', syncCanvases);
+//       wavesurfer.un('zoom', syncCanvases);
+//       wavesurfer.un('redraw', syncCanvases);
+//       ro.disconnect();
+//     };
+//   }, [wavesurfer]);
 
   // 播放/暂停控制
   const onPlayPause = useCallback(() => {
@@ -314,11 +379,14 @@ const AudioWaveform = forwardRef(({
       }
       if (wavesurfer) {
         console.log("[AudioWaveform] 播放区域 ", start, ' - ', end);
-        wavesurfer.play(start, end);
         setIsPlaying(true);
+        wavesurfer.play(start, end);
+        setIsPlaying(false);
       }
     }
   }));
+
+
 
   useEffect(() => {
     if (activeRegionId) {
@@ -336,14 +404,9 @@ const AudioWaveform = forwardRef(({
 
   // 在UI中显示
   return (
-    <div style={{ width: '100%', padding: '20px' }}>
-      <h2>音频波形图</h2>
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-        <button onClick={onPlayPause} disabled={!isReady}>
-          {isPlaying ? '暂停' : '播放'}
-        </button>
-        <button onClick={printRegions}>打印高亮区域</button>
-      </div>
+    <div style={{ width: '100%', padding: '20px', minWidth: 0 /* 避免在 flex 中被内容撑开 */ }}>
+      
+      
       {!isReady && <p>音频加载中...</p>}
 
       <div style={{
@@ -352,17 +415,22 @@ const AudioWaveform = forwardRef(({
         borderRadius: '4px',
         padding: '10px',
         backgroundColor: '#f8f9fa',
-        marginBottom: '20px'
+        marginBottom: '20px',
+        minWidth: 0,            // 关键：允许在 flex 中收缩
+        overflowX: 'auto',     // 关键：如果 canvas 很宽，出现横向滚动而不是撑开父容器
+        boxSizing: 'border-box'
       }}>
-        <div ref={waveformRef} style={{ marginBottom: '10px' }} />
+        <div ref={waveformRef} style={{ marginBottom: '10px', minWidth: 0 }} />
         <div ref={spectrogramRef} />
       </div>
       
-      {activeRegion && (
-        <div style={{ marginTop: 10, color: '#e67e22' }}>
-          当前活动区域：{activeRegion.start.toFixed(2)}s - {activeRegion.end.toFixed(2)}s
-        </div>
-      )}
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+        <button onClick={onPlayPause} disabled={!isReady}>
+          {isPlaying ? '暂停' : '播放'}
+        </button>
+        
+      </div>
 
     </div>
   );
