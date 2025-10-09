@@ -4,6 +4,8 @@
  * 一个音频的多个标注结果 [{name: asr, anno: anno}, {name: ref, anno: anno}]
  */
 
+const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
+
 
 
 /**
@@ -15,7 +17,7 @@
 export const fetchAnnotation = async (datasetName, audioUrl) => {
   try {
     const utt = audioUrl.split('/').pop();
-    const response = await fetch(`http://localhost:9801/api/anno/${datasetName}/${utt}`);
+    const response = await fetch(`${API_HOST}/api/anno/${datasetName}/${utt}`);
     const data = await response.json();
     return data.anno;
   } catch (error) {
@@ -49,7 +51,7 @@ export const fetchAnnotation = async (datasetName, audioUrl) => {
 export const uploadAnnotations = async (utt, annotations) => {
   try {
     console.log('Uploading annotations...', annotations);
-    const response = await fetch(`http://localhost:9801/api/anno/${utt}`, {
+    const response = await fetch(`${API_HOST}/api/anno/${utt}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -79,7 +81,7 @@ export const uploadAnnotations = async (utt, annotations) => {
  */
 export const updateAnnotation = async (username, datasetName, utt, annoData) => {
   try {
-    const response = await fetch('http://localhost:9801/api/update_anno', {
+    const response = await fetch(`${API_HOST}/api/update_anno`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -109,7 +111,7 @@ export const updateAnnotation = async (username, datasetName, utt, annoData) => 
 export const fetchAnnotations = async (audioUrl) => {
   try {
     const utt = audioUrl.split('/').pop();
-    const response = await fetch(`http://localhost:9801/api/annos/${utt}`);
+    const response = await fetch(`${API_HOST}/api/annos/${utt}`);
     const data = await response.json();
     return data.annos;
   } catch (error) {
@@ -127,7 +129,7 @@ export const fetchAnnotations = async (audioUrl) => {
  */
 export const mergeAnnotations = async (anno1, anno2) => {
   try {
-    const response = await fetch('http://localhost:9801/api/merge_annotations', {
+    const response = await fetch(`${API_HOST}/api/merge_annotations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -195,7 +197,7 @@ export const getRegions_annos = (selectedNames, annotations) => {
  */
 export const fetchDatasetList = async () => {
   try {
-    const response = await fetch('http://localhost:9801/api/dataset/dataset_infos');
+    const response = await fetch(`${API_HOST}/api/dataset/dataset_infos`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -215,7 +217,7 @@ export const fetchDatasetList = async () => {
  */
 export const activateDataset = async (datasetName) => {
   try {
-    const response = await fetch(`http://localhost:9801/api/dataset/load/${datasetName}`, {
+    const response = await fetch(`${API_HOST}/api/dataset/load/${datasetName}`, {
       method: 'POST',
     });
     if (!response.ok) {
