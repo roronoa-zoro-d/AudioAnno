@@ -13,9 +13,11 @@ const Auth = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMsg('');
+    // 使用 API_HOST 统一管理后端地址
+    const { API_HOST } = require('./utils/apiService');
     const url = mode === 'login'
-      ? 'http://localhost:9801/api/login'
-      : 'http://localhost:9801/api/register';
+      ? `${API_HOST}/api/login`
+      : `${API_HOST}/api/register`;
     try {
       const res = await fetch(url, {
         method: 'POST',
