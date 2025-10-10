@@ -15,6 +15,7 @@ import { getColumnsByParams } from './tableColumns';
 import './SpeechAnno.css';
 import { useLocation } from 'react-router-dom';
 import { useUser } from './UserContext';
+import { API_HOST } from './utils/apiService';
 
 // 纯排序函数
 const sortAnnoByStartTime = (items) => {
@@ -66,7 +67,7 @@ const SpeechAnno = () => {
       setAudioLoading(true);
       setAudioError(null);
       try {
-        const res = await fetch(`http://localhost:9801/api/dataset/anno_list/${datasetName}/${splitName}`);
+        const res = await fetch(`${API_HOST}/api/dataset/anno_list/${datasetName}/${splitName}`);
         if (!res.ok) throw new Error('服务器返回错误');
         const data = await res.json();
         setAudioList(data.audios || []);
@@ -114,14 +115,14 @@ const SpeechAnno = () => {
       initialAnnotationsRef.current = JSON.parse(JSON.stringify(processedData));
 
       setAudioData({
-        audioUrl: `http://localhost:9801/api/audio/${datasetName}/${audioId}`,
+        audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
         annotationData: processedData,
         audioId
       });
       setHasChanges(false); // 重置修改状态
     } catch (error) {
       setAudioData({
-        audioUrl: `http://localhost:9801/api/audio/${datasetName}/${audioId}`,
+        audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
         annotationData: [],
         audioId,
         error: error.message

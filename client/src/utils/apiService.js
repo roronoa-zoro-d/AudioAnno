@@ -3,8 +3,7 @@
  *  一个音频的标注结果： {name: asr, anno: anno}
  * 一个音频的多个标注结果 [{name: asr, anno: anno}, {name: ref, anno: anno}]
  */
-
-const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
+export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
 
 
 

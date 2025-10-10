@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUser } from './UserContext';
 import { useNavigate } from 'react-router-dom';
+import { API_HOST } from './utils/apiService';
 
 const Auth = () => {
   const [mode, setMode] = useState('login');
@@ -14,7 +15,6 @@ const Auth = () => {
     e.preventDefault();
     setMsg('');
     // 使用 API_HOST 统一管理后端地址
-    const { API_HOST } = require('./utils/apiService');
     const url = mode === 'login'
       ? `${API_HOST}/api/login`
       : `${API_HOST}/api/register`;
