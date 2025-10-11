@@ -70,7 +70,7 @@ const createRadioColumn = (key, label, options) => {
 const indexColumn = {
   key: 'index',
   label: '序号',
-//   width: '5%',
+  width: '5%',
   render: (_, idx) => (
     <Chip 
       label={idx + 1} 
@@ -84,7 +84,7 @@ const indexColumn = {
 const segmentColumn = {
   key: 'timeRange',
   label: '时间段',
-//   width: '25%',
+  width: '20%',
   render: (item) => (
     <Box sx={{ 
       display: 'flex', 
