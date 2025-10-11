@@ -15,9 +15,12 @@ const Auth = () => {
     e.preventDefault();
     setMsg('');
     // 使用 API_HOST 统一管理后端地址
+    
     const url = mode === 'login'
       ? `${API_HOST}/api/login`
       : `${API_HOST}/api/register`;
+    console.log('API_HOST:', API_HOST);
+    console.log('Request URL:', url);
     try {
       const res = await fetch(url, {
         method: 'POST',

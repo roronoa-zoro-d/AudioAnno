@@ -1,5 +1,7 @@
 FROM node:18-alpine AS build
 
+ENV REACT_APP_API_HOST=10.130.253.103:9801
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps --silent

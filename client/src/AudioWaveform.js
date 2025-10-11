@@ -5,6 +5,7 @@ import Hover from 'wavesurfer.js/dist/plugins/hover.esm.js';
 import TimelinePlugin from 'wavesurfer.js/dist/plugins/timeline.esm.js';
 import RegionsPlugin from 'wavesurfer.js/dist/plugins/regions.esm.js';
 import Minimap from 'wavesurfer.js/dist/plugins/minimap.esm.js'
+import { getWaveformWidth } from './utils/domUtils';
 
 // 将纯函数定义在组件外部
 const sortRegionsByStartTime = (regions) => {
@@ -21,7 +22,7 @@ const AudioWaveform = forwardRef(({
 }, ref) => {
   const waveformRef = useRef(null);
   const spectrogramRef = useRef(null);
-  const sliderRef = useRef(null);
+  // const sliderRef = useRef(null);
   const [wavesurfer, setWavesurfer] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -166,7 +167,7 @@ const AudioWaveform = forwardRef(({
       cursorColor: '#36b9cc',
       cursorWidth: 1,
       height: 200,
-      // 不设置  minPxPerSec ，默认展示全部波形
+      minPxPerSec: 30, // 不设置  minPxPerSec ，默认展示全部波形
       plugins: [
         RegionsPlugin.create({
           dragSelection: {
@@ -198,7 +199,7 @@ const AudioWaveform = forwardRef(({
         }),
         // Register the plugin
         Minimap.create({
-          height: 20,
+          height: 40,
           waveColor: '#ddd',
           progressColor: '#999',
           // the Minimap takes all the same options as the WaveSurfer itself
@@ -227,29 +228,22 @@ const AudioWaveform = forwardRef(({
         setIsReady(true);
 
         setTimeout(() => {
-          const duration = wavesurfer.getDuration();
-          const waveEl = waveformRef.current;
-          let waveCanvas = null;
-
-          if (waveEl && waveEl.shadowRoot) {
-            // 在 Shadow DOM 里查找 canvas
-            waveCanvas = waveEl.shadowRoot.querySelector('canvas');
-          } else if (waveEl) {
-            // 兼容旧版本或插件未用 shadowRoot
-            waveCanvas = waveEl.querySelector('canvas');
-          }
-
-          console.log('[调试] waveformRef.current:', waveEl);
-          console.log('[调试] waveCanvas:', waveCanvas);
-          console.log('[调试] duration:', duration);
-
-          if (waveCanvas && duration) {
-            const pxPerSec = waveCanvas.width / duration;
-            console.log(`[调试] 当前每秒音频对应像素点数: ${pxPerSec}`);
-          } else {
-            console.log('[调试] 未获取到canvas宽度或音频时长');
-          }
-        }, 100);
+          (async () => {
+            const duration = wavesurfer.getDuration();
+            const waveEl = waveformRef.current;
+            console.log('[调试] waveformRef.current:', waveEl);
+            // 使用工具函数稳健查找宽度（返回 CSS 像素）
+            const width = await getWaveformWidth(waveEl, wavesurfer, { maxAttempts: 8, baseDelay: 100 });
+            console.log('[调试] 查找到的波形宽度（CSS 像素）:', width);
+            console.log('[调试] duration:', duration);
+            if (width && duration) {
+              const pxPerSec = width / duration;
+              console.log(`[调试] 当前每秒音频对应像素点数: ${pxPerSec}`);
+            } else {
+              console.log('[调试] 未获取到宽度或音频时长');
+            }
+          })();
+         }, 100);
 
         const regionsPlugin = wavesurfer.getActivePlugins().find(
           plugin => plugin instanceof RegionsPlugin
@@ -303,64 +297,7 @@ const AudioWaveform = forwardRef(({
     };
   }, [wavesurfer, handleRegionCreated, handleRegionRemoved, handleRegionClicked, handleRegionUpdated, handleKeyDown]);
 
-// // 新增：将 waveform 与 spectrogram 放在同一滚动容器并同步 canvas 宽度/滚动，保证时间轴一致
-//   useEffect(() => {
-//     if (!wavesurfer) return;
 
-//     const syncCanvases = () => {
-//       try {
-//         const waveEl = waveformRef.current;
-//         const specEl = spectrogramRef.current;
-//         if (!waveEl || !specEl) return;
-
-//         const waveCanvas = waveEl.querySelector('canvas');
-//         const specCanvas = specEl.querySelector('canvas');
-//         if (!waveCanvas || !specCanvas) return;
-
-//         // 同步内部像素宽度（device pixels）
-//         if (specCanvas.width !== waveCanvas.width) {
-//           specCanvas.width = waveCanvas.width;
-//         }
-
-//         // 同步 css 宽度（保证在同一滚动容器中视觉一致）
-//         const deviceRatio = window.devicePixelRatio || 1;
-//         const cssWidth = waveCanvas.style.width || `${waveCanvas.width / deviceRatio}px`;
-//         if (specCanvas.style.width !== cssWidth) {
-//           specCanvas.style.width = cssWidth;
-//         }
-
-//         // 如果两者在不同容器，强制同步 scrollLeft；通常它们都在同一 overflow 容器
-//         const waveContainer = waveEl.parentElement;
-//         const specContainer = specEl.parentElement;
-//         if (waveContainer && specContainer && waveContainer !== specContainer) {
-//           specContainer.scrollLeft = waveContainer.scrollLeft;
-//         }
-//       } catch (err) {
-//         // 保持安静，避免抛出影响主流程
-//         // console.warn('[syncCanvases] error', err);
-//       }
-//     };
-
-//     // 绑定事件：ready / zoom / redraw，同时用 ResizeObserver 捕获容器尺寸变化
-//     wavesurfer.on('ready', syncCanvases);
-//     wavesurfer.on('zoom', syncCanvases);
-//     wavesurfer.on('redraw', syncCanvases);
-
-//     const ro = new ResizeObserver(syncCanvases);
-//     if (waveformRef.current) ro.observe(waveformRef.current);
-//     if (spectrogramRef.current) ro.observe(spectrogramRef.current);
-
-//     // 首次同步（给插件一点时间绘制）
-//     const t = setTimeout(syncCanvases, 50);
-
-//     return () => {
-//       clearTimeout(t);
-//       wavesurfer.un('ready', syncCanvases);
-//       wavesurfer.un('zoom', syncCanvases);
-//       wavesurfer.un('redraw', syncCanvases);
-//       ro.disconnect();
-//     };
-//   }, [wavesurfer]);
 
   // 播放/暂停控制
   const onPlayPause = useCallback(() => {
@@ -423,22 +360,22 @@ const AudioWaveform = forwardRef(({
     }
   }, [activeRegionId, highlightedRegions]);
 
-useEffect(() => {
-  const slider = sliderRef.current;
-  if (!slider || !wavesurfer) return;
+// useEffect(() => {
+//   const slider = sliderRef.current;
+//   if (!slider || !wavesurfer) return;
 
-  const handleInput = (e) => {
-    const minPxPerSec = e.target.valueAsNumber;
-    console.log('[滑块调试] 当前缩放值:', minPxPerSec); // 新增调试输出
-    wavesurfer.zoom(minPxPerSec);
-  };
+//   const handleInput = (e) => {
+//     const minPxPerSec = e.target.valueAsNumber;
+//     console.log('[滑块调试] 当前缩放值:', minPxPerSec); // 新增调试输出
+//     wavesurfer.zoom(minPxPerSec);
+//   };
 
-  slider.addEventListener('input', handleInput);
+//   slider.addEventListener('input', handleInput);
 
-  return () => {
-    slider.removeEventListener('input', handleInput);
-  };
-}, [wavesurfer]);
+//   return () => {
+//     slider.removeEventListener('input', handleInput);
+//   };
+// }, [wavesurfer]);
 
 
   // 在UI中显示
@@ -471,11 +408,11 @@ useEffect(() => {
         
       </div>
 
-      <div style={{ marginTop: '10px' }}>
+      {/* <div style={{ marginTop: '10px' }}>
         <label style={{ fontSize: '14px', marginRight: '10px' }}>缩放：</label>
         <input
           type="range"
-          min="0"
+          min="5"
           max="60"
           step="10"
           defaultValue={50}
@@ -483,7 +420,7 @@ useEffect(() => {
           style={{ flex: 1 }}
           disabled={!isReady}
         />
-      </div>
+      </div> */}
     </div>
   );
 });
