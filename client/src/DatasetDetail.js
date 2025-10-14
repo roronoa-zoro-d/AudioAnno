@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { data, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useActiveDatasets } from './ActiveDatasetsContext';
 
 const DatasetDetail = () => {
@@ -29,6 +29,7 @@ const DatasetDetail = () => {
 
   // 跳转到SpeechAnno并传递参数
   const handleSplitClick = (splitName) => {
+    // console.log('点击 ', datasetName, splitName, columnParams);
     if (annoType === 'seg_anno') {
       navigate('/speech-annotation/long', {
         state: { datasetName, splitName, columnParams }
