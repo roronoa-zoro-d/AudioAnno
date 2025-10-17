@@ -4,7 +4,7 @@
  * 一个音频的多个标注结果 [{name: asr, anno: anno}, {name: ref, anno: anno}]
  */
 // export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
-export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9801';
+export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9802';
 
 
 
@@ -20,6 +20,24 @@ export const fetchAnnotation = async (datasetName, audioUrl) => {
     const response = await fetch(`${API_HOST}/api/anno/${datasetName}/${utt}`);
     const data = await response.json();
     return data.anno;
+  } catch (error) {
+    console.error('Failed to fetch annotations:', error);
+    return [];
+  }
+};
+
+/**
+ * 获取音频标注结果, 服务只返回一个
+ * @param {string} audioUrl - 音频文件URL
+ * @returns {Promise<Array>} - 返回标注结果数组 
+ * {anno: [{seg:[], text:"你好"}, {}]}
+ */
+export const fetchWerAnnotation = async (datasetName, wer_name, utt) => {
+  try {
+    
+    const response = await fetch(`${API_HOST}/api/wer_list/${datasetName}/${wer_name}/${utt}`);
+    const data = await response.json();
+    return data.merged_segs;
   } catch (error) {
     console.error('Failed to fetch annotations:', error);
     return [];
