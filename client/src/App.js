@@ -11,6 +11,8 @@ import { ActiveDatasetsProvider } from './ActiveDatasetsContext';
 import Auth from './Auth';
 import { UserProvider } from './UserContext';
 import './App.css';
+import LongAudioShow from './LongAudioShow';
+import ShortAudioShow from './ShortAudioShow';
 
 function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -29,6 +31,8 @@ function App() {
                 <Route path="/speech-analysis/wer" element={<WERAnalysis />} />
                 <Route path="/datasetManager/dataset" element={<Dataset />} />
                 <Route path="/dataset/:name" element={<DatasetDetail />} />
+                <Route path="/speech-show/long" element={<LongAudioShow />} />
+                <Route path="/speech-show/short" element={<ShortAudioShow />} />
               </Routes>
             </div>
           </div>

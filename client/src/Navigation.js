@@ -38,6 +38,20 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
+
+        <div className={`nav-group ${isActivePath('/speech-show') ? 'active' : ''}`}>
+          <div className="nav-title">音频标注预览</div>
+          <div className="nav-subitems">
+            <NavLink to="/speech-show/long" className="nav-item">
+              <span className="icon">🎙️</span>
+              {!collapsed && <span>长音频预览</span>}
+            </NavLink>
+            <NavLink to="/speech-show/short" className="nav-item">
+              <span className="icon">🔊</span>
+              {!collapsed && <span>短音频预览</span>}
+            </NavLink>
+          </div>
+        </div>
         
         <div className={`nav-group ${isActivePath('/speech-analysis') ? 'active' : ''}`}>
           <div className="nav-title">语音分析</div>
