@@ -106,93 +106,111 @@ const WerAnno = ({ datasetName, werName, audioId }) => {
   ];
 
   return (
-    <Box sx={{ p: 2, border: '1px solid #eee', borderRadius: 2, background: '#fafbfc', }}>
-      <Typography variant="h6" gutterBottom>模型识别错误原因标注</Typography>
+    <Box sx={{ p: 1.5, border: '1px solid #eee', borderRadius: 2, background: '#fafbfc' }}>
+      {/* 标题 + 提交按钮行 */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+          模型识别错误原因标注
+        </Typography>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={handleSubmit}
+          disabled={submitLoading || loading}
+        >
+          {submitLoading ? '提交中...' : '提交'}
+        </Button>
+      </Box>
       {loading ? (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <CircularProgress size={20} /> <span>加载中...</span>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={18} /> <Typography variant="body2">加载中...</Typography>
         </Box>
       ) : (
         <>
-          {/* 第一行：服务端labels */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ mb: 0, mr: 2, whiteSpace: 'nowrap' }}>
-              请选择可能的原因：
-            </Typography>
-            <FormGroup
-              row
-              sx={{
-                flexWrap: 'nowrap',
-                overflowX: 'auto',
-                maxWidth: '100%',
-                mb: 0,
-              }}
-            >
-              {firstLabels.map(label => (
-                <FormControlLabel
-                  key={label}
-                  control={
-                    <Checkbox
-                      checked={selectedLabels.includes(label)}
-                      onChange={() => handleLabelChange(label)}
-                    />
-                  }
-                  label={label}
-                  sx={{ mr: 2, whiteSpace: 'nowrap' }}
-                />
-              ))}
-              {restLabels.length > 0 && (
-                <Select
-                  value={dropdownValue}
-                  displayEmpty
-                  onChange={handleDropdownChange}
-                  size="small"
-                  sx={{ minWidth: 120, ml: 2, alignSelf: 'center' }}
-                  renderValue={selected => selected || '更多原因'}
-                >
-                  <MenuItem value="" disabled>更多原因</MenuItem>
-                  {restLabels.map(label => (
-                    <MenuItem key={label} value={label} disabled={selectedLabels.includes(label)}>
-                      {label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            </FormGroup>
-          </Box>
-          {/* 第二行：用户填写的label */}
+          {/* 第一行：服务端labels（滚动一行） */}
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ mr: 1, whiteSpace: 'nowrap' }}>
+                请选择可能的原因:
+              </Typography>
+              <FormGroup
+                row
+                sx={{
+                  flexWrap: 'nowrap',
+                  overflowX: 'auto',
+                  maxWidth: '100%',
+                  mb: 0,
+                }}
+              >
+                {firstLabels.map(label => (
+                  <FormControlLabel
+                    key={label}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={selectedLabels.includes(label)}
+                        onChange={() => handleLabelChange(label)}
+                      />
+                    }
+                    label={<Typography variant="caption">{label}</Typography>}
+                    sx={{ mr: 1, whiteSpace: 'nowrap' }}
+                  />
+                ))}
+                {restLabels.length > 0 && (
+                  <Select
+                    value={dropdownValue}
+                    displayEmpty
+                    onChange={handleDropdownChange}
+                    size="small"
+                    sx={{ minWidth: 110, ml: 1 }}
+                    renderValue={selected => selected || '更多'}
+                  >
+                    <MenuItem value="" disabled>更多</MenuItem>
+                    {restLabels.map(label => (
+                      <MenuItem key={label} value={label} disabled={selectedLabels.includes(label)}>
+                        {label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                )}
+              </FormGroup>
+            </Box>
+          {/* 第二行：单行自定义原因 */}
           <TextField
-            label="其他原因（可选）"
+            label="其他原因(可选)"
             value={customReason}
             onChange={e => setCustomReason(e.target.value)}
             fullWidth
-            multiline
-            minRows={2}
-            sx={{ mb: 2 }}
-            placeholder="请输入其他原因"
+            size="small"
+            sx={{ mb: 1 }}
+            placeholder="输入原因后即可被提交"
           />
-          {/* 第三行：当前选择的label（服务端reason+当前选择+自定义） */}
-          {(currentReasons.length > 0) && (
-            <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-              <Typography variant="subtitle2" sx={{ mb: 0, mr: 2, whiteSpace: 'nowrap' }}>
-                已选择/填写的原因：
+          {/* 第三行：已选择/填写的原因 */}
+          {currentReasons.length > 0 && (
+            <Box sx={{ mb: 1, display: 'flex', alignItems: 'flex-start' }}>
+              <Typography variant="body2" sx={{ mr: 1, whiteSpace: 'nowrap', mt: 0.2 }}>
+                已选择:
               </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                 {currentReasons.map((reason, idx) => (
-                  <Chip key={reason + idx} label={reason} size="small" />
+                  <Chip
+                    key={reason + idx}
+                    label={reason}
+                    size="small"
+                    onDelete={() => {
+                      // 仅删除已选标签（自定义原因在输入框修改/清空）
+                      if (selectedLabels.includes(reason)) {
+                        setSelectedLabels(prev => prev.filter(r => r !== reason));
+                      } else if (customReason.trim() === reason) {
+                        setCustomReason('');
+                      }
+                    }}
+                  />
                 ))}
               </Box>
             </Box>
           )}
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={submitLoading}
-          >
-            {submitLoading ? '提交中...' : '提交'}
-          </Button>
+          {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
+          {successMsg && <Alert severity="success" sx={{ mb: 1 }}>{successMsg}</Alert>}
         </>
       )}
     </Box>

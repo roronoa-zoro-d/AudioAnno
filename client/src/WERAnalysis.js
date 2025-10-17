@@ -161,7 +161,7 @@ const WERAnalysis = () => {
       <div className="content-container">
         {/* 波形图区域 */}
         <div className="waveform-container">
-          <div className="waveform-title">音频波形图</div>
+          
           {!audioData ? (
             <Placeholder text="请选择音频文件" />
           ) : loading ? (

@@ -360,22 +360,6 @@ const AudioWaveform = forwardRef(({
     }
   }, [activeRegionId, highlightedRegions]);
 
-// useEffect(() => {
-//   const slider = sliderRef.current;
-//   if (!slider || !wavesurfer) return;
-
-//   const handleInput = (e) => {
-//     const minPxPerSec = e.target.valueAsNumber;
-//     console.log('[滑块调试] 当前缩放值:', minPxPerSec); // 新增调试输出
-//     wavesurfer.zoom(minPxPerSec);
-//   };
-
-//   slider.addEventListener('input', handleInput);
-
-//   return () => {
-//     slider.removeEventListener('input', handleInput);
-//   };
-// }, [wavesurfer]);
 
 
   // 在UI中显示
@@ -385,13 +369,19 @@ const AudioWaveform = forwardRef(({
       
       {!isReady && <p>音频加载中...</p>}
 
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+        <button onClick={onPlayPause} disabled={!isReady}>
+          {isPlaying ? '暂停' : '播放'}
+        </button>
+      </div>
+
       <div style={{
         position: 'relative',
         border: '1px solid #ddd',
         borderRadius: '4px',
         padding: '10px',
         backgroundColor: '#f8f9fa',
-        marginBottom: '20px',
+        // marginBottom: '20px',
         minWidth: 0,            // 关键：允许在 flex 中收缩
         overflowX: 'auto',     // 关键：如果 canvas 很宽，出现横向滚动而不是撑开父容器
         boxSizing: 'border-box'
@@ -401,26 +391,8 @@ const AudioWaveform = forwardRef(({
       </div>
       
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
-        <button onClick={onPlayPause} disabled={!isReady}>
-          {isPlaying ? '暂停' : '播放'}
-        </button>
-        
-      </div>
+      
 
-      {/* <div style={{ marginTop: '10px' }}>
-        <label style={{ fontSize: '14px', marginRight: '10px' }}>缩放：</label>
-        <input
-          type="range"
-          min="5"
-          max="60"
-          step="10"
-          defaultValue={50}
-          ref={sliderRef}
-          style={{ flex: 1 }}
-          disabled={!isReady}
-        />
-      </div> */}
     </div>
   );
 });
