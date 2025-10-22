@@ -19,6 +19,7 @@ const AudioWaveform = forwardRef(({
     onRegionUpdated,
     onAudioReady,
     activeRegionId, // 新增这一行
+    minPxPerSec, // 新增参数
 }, ref) => {
   const waveformRef = useRef(null);
   const spectrogramRef = useRef(null);
@@ -167,7 +168,8 @@ const AudioWaveform = forwardRef(({
       cursorColor: '#36b9cc',
       cursorWidth: 1,
       height: 200,
-      minPxPerSec: 30, // 不设置  minPxPerSec ，默认展示全部波形
+      // minPxPerSec: 30, // 不设置  minPxPerSec ，默认展示全部波形
+      ...(typeof minPxPerSec === 'number' ? { minPxPerSec } : {}), // 只在有参数时设置
       plugins: [
         RegionsPlugin.create({
           dragSelection: {
@@ -214,7 +216,7 @@ const AudioWaveform = forwardRef(({
       ws.destroy();
       setWavesurfer(null);
     };
-  }, []);
+  }, [minPxPerSec]);
   // 加载音频
   useEffect(() => {
     if (wavesurfer && audioUrl) {

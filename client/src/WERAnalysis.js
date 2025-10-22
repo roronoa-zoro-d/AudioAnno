@@ -20,13 +20,16 @@ const WERAnalysis = () => {
   // State
   const [audioData, setAudioData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeRegionId, setActiveRegionId] = useState(null);
+  // const [activeRegionId, setActiveRegionId] = useState(null);
   const [audioList, setAudioList] = useState([]);
   const [audioWers, setAudioWers] = useState({});
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState(null);
   const [werTableData, setWerTableData] = useState([]); // 新增
-  const [waveformReady, setWaveformReady] = useState(false); // 新增
+  // const [waveformReady, setWaveformReady] = useState(false); // 新增
+
+  // 新增：minPxPerSec 状态，默认30
+  const [minPxPerSec, setMinPxPerSec] = useState(30);
 
   // 获取 WER 音频列表和字错率信息
   useEffect(() => {
@@ -58,7 +61,7 @@ const WERAnalysis = () => {
       return;
     }
     setLoading(true);
-    setWaveformReady(false);
+    // setWaveformReady(false);
 
     try {
       // fetchWerAnnotation 返回的 annotationData 结构需包含 wer_table 字段
@@ -130,7 +133,7 @@ const WERAnalysis = () => {
         });
       });
 
-      setWaveformReady(true);
+      // setWaveformReady(true);
     }
   }, [audioData]);
 
@@ -159,6 +162,20 @@ const WERAnalysis = () => {
 
       {/* 右侧内容区域 */}
       <div className="content-container">
+        {/* 波形图参数设置区域（只保留滑动条） */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 0 4px 0' }}>
+                  <Typography variant="body2" sx={{ minWidth: 90 }}>波形密度 (minPxPerSec):</Typography>
+                  <input
+                    type="range"
+                    min={0}
+                    max={50}
+                    step={10}
+                    value={minPxPerSec}
+                    onChange={e => setMinPxPerSec(Number(e.target.value))}
+                    style={{ width: 120 }}
+                  />
+                  <span style={{ fontSize: 13, color: '#888' }}>{minPxPerSec}</span>
+                </div>
         {/* 波形图区域 */}
         <div className="waveform-container">
           
@@ -173,7 +190,7 @@ const WERAnalysis = () => {
               ref={audioWaveformRef}
               audioUrl={audioData.audioUrl}
               onAudioReady={handleAudioReady}
-              activeRegionId={activeRegionId}
+              // activeRegionId={activeRegionId}
               key={audioData.audioId}
             />
           )}

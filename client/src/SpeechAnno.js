@@ -48,6 +48,10 @@ const SpeechAnno = () => {
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState(null);
 
+  // 新增：minPxPerSec 状态，默认30
+  const [minPxPerSec, setMinPxPerSec] = useState(30);
+
+
   // 存储初始标注数据用于比较
   const initialAnnotationsRef = useRef([]);
 
@@ -341,6 +345,21 @@ const SpeechAnno = () => {
 
       {/* 右侧内容区域 */}
       <div className="content-container">
+        {/* 波形图参数设置区域（只保留滑动条） */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '10px 0 4px 0' }}>
+          <Typography variant="body2" sx={{ minWidth: 90 }}>波形密度 (minPxPerSec):</Typography>
+          <input
+            type="range"
+            min={0}
+            max={50}
+            step={10}
+            value={minPxPerSec}
+            onChange={e => setMinPxPerSec(Number(e.target.value))}
+            style={{ width: 120 }}
+          />
+          <span style={{ fontSize: 13, color: '#888' }}>{minPxPerSec}</span>
+        </div>
+
         {/* 波形图区域 */}
         <div className="waveform-container">
           <div className="waveform-title">音频波形图</div>
@@ -360,6 +379,7 @@ const SpeechAnno = () => {
               onAudioReady={handleAudioReady}
               activeRegionId={activeRegionId}
               key={audioData.audioId}
+              {...(minPxPerSec > 0 ? { minPxPerSec } : {})}
             />
           )}
         </div>
