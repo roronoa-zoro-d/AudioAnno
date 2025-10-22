@@ -37,6 +37,9 @@ const DatasetDetail = () => {
         state: { datasetName, splitName, columnParams }
       });
     }
+    else{
+      console.warn('Unsupported annoType:', annoType);
+    }
     // 其他类型可在此扩展
   };
 
