@@ -27,9 +27,11 @@ const createRadioColumn = (key, label, options) => {
     key,
     label,
     render: (item, rowIndex, onCellChange) => {
-     
+
+      const current = item[key];
       return (
         <RadioGroup 
+          value ={current || ''}
           onChange={(e) => {onCellChange(rowIndex, key, e.target.value);}}
           row
           sx={{
@@ -249,6 +251,7 @@ const getColumnsByParams = (params) => {
                     columns.push(createRadioColumn(key, label, options));
                 }
             }
+            else{ console.warn('Invalid radio column configuration:', radioCol);}
         });
     }
     return columns;
