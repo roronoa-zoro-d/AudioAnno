@@ -340,6 +340,7 @@ const SpeechAnno = () => {
           loading={audioLoading}
           error={audioError}
           onSelectAudio={handleSelectAudio}
+          status_key='anno_status'
         />
       </div>
 

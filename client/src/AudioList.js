@@ -2,9 +2,27 @@ import React, { useState } from 'react';
 
 // 定义标注状态到颜色的映射
 const STATUS_COLOR_MAP = {
-  'unlabeled': '#f5f5f5',      // 未标注 - 浅灰色
-  'labeled': '#e6f7ff',        // 已标注 - 浅蓝色
-  'submitted': '#f9f0ff',      // 已提交 - 浅紫色
+  'unlabeled': '#f8f9fa',      // 未标注 - 浅灰色
+  'labeled': '#e3f2fd',        // 已标注 - 浅蓝色
+  'unchecked': '#fff3e0',     // 已提交待质检 - 浅橙色
+  'verified': '#d0f5e8',       // 质检通过 - 浅绿色
+  'rejected': '#ffe0e0',       // 质检拒绝需重标 - 浅红色
+  'discarded': '#7d5b3dff',      // 已丢弃 - 更浅灰色
+};
+
+const STATUS_LABEL_MAP = {
+  'unlabeled': '未标注',
+  'labeled': '已标注',
+  'unchecked': '待质检',
+  'verified': '已质检',
+  'rejected': '需重标',
+  'discarded': '已丢弃',
+}
+
+// 统计项配置
+const STAT_CONFIG = {
+  anno_status: ['unlabeled', 'labeled', 'submitted'],
+  check_status: ['unchecked', 'verified', 'rejected', 'discarded'],
 };
 
 const AudioList = ({
@@ -12,47 +30,57 @@ const AudioList = ({
   audioStates,
   loading,
   error,
+  status_key,   // 状态键名, 标注状态或者质检状态 anno_status  check_status
   onSelectAudio // 音频选择回调函数
 }) => {
   const [currentSelected, setCurrentSelected] = useState(null);
 
 
 
+
   const handleAudioClick = (audio) => {
     setCurrentSelected(audio);
     onSelectAudio(audio);
+    console.log('select audio:', audio, ' state:', audioStates[audio]);
   };
 
   // 获取音频状态
   const getAudioStatus = (audio) => {
-    const state = audioStates[audio];
-    return state ? state.anno_status || 'unlabeled' : 'unlabeled';
+    const state = audioStates[audio][status_key];
+    return state 
   };
+  const getAudioLabel = (audio) => {
+    const state = audioStates[audio][status_key];
+    // console.log('audio state:', state);
+    return state ? STATUS_LABEL_MAP[state] || '未知标签1' : '未知状态2';
+  }
 
   // 获取状态颜色
-  const getStatusColor = (audio) => {
-    const status = getAudioStatus(audio);
+  const getStatusColor = (status) => {
     return STATUS_COLOR_MAP[status] || '#f5f5f5';
   };
 
   // 获取状态标签
-  const getStatusLabel = (audio) => {
-    const status = getAudioStatus(audio);
-    const labels = {
-      'unlabeled': '未标注',
-      'labeled': '已标注',
-      'submitted': '已提交',
-    };
-    return labels[status] || status;
+  const getStatusLabel = (status) => {
+    return STATUS_LABEL_MAP[status] || '未知标签3';
   };
+
+  // 获取统计项
+  const statKeys = STAT_CONFIG[status_key] || [];
+    // 统计数据
+  const statData = statKeys.map(key => ({
+    label: getStatusLabel(key),
+    count: audioList.filter(audio => getAudioStatus(audio) === key).length
+  }));
+
 
   // 获取音频的详细信息（用于悬停提示）
   const getAudioTooltip = (audio) => {
-    const state = audioStates[audio];
+    const state = audioStates[audio][status_key];
     if (!state) return audio;
 
     return `
-标注状态: ${getStatusLabel(audio)}
+标注状态: ${getAudioLabel(audio)}
 标注者: ${state.annotator || '未分配'}
 审核状态: ${state.check_status === 'checked' ? '已审核' : '未审核'}
 提交次数: ${state.submit_times || 0}
@@ -159,10 +187,15 @@ const AudioList = ({
         borderRadius: '4px',
         border: '1px solid #e9ecef'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
+        {/* <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
           <span>未标注: {audioList.filter(audio => getAudioStatus(audio) === 'unlabeled').length}</span>
           <span>已标注: {audioList.filter(audio => getAudioStatus(audio) === 'labeled').length}</span>
           <span>已提交: {audioList.filter(audio => getAudioStatus(audio) === 'submitted').length}</span>
+        </div> */}
+        <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
+          {statData.map(item => (
+            <span key={item.label}>{item.label}: {item.count}</span>
+          ))}
         </div>
       </div>
 
@@ -173,7 +206,7 @@ const AudioList = ({
       }}>
         {audioList.map((audio) => {
           const status = getAudioStatus(audio);
-          const statusColor = getStatusColor(audio);
+          const statusColor = getStatusColor(status);
           const isSelected = currentSelected === audio;
 
 
@@ -225,7 +258,7 @@ const AudioList = ({
                 marginLeft: '8px',
                 whiteSpace: 'nowrap'
               }}>
-                {getStatusLabel(audio)}
+                {getAudioLabel(audio)}
               </span>
 
 

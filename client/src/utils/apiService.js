@@ -45,49 +45,6 @@ export const fetchWerAnnotation = async (datasetName, wer_name, utt) => {
 };
 
 
-/** 
- * 上传音频标注数据
- * @param {string} audioUrl - 音频文件URL
- * @param {Array} annotations - 标注数据数组
- * @returns {Promise<{status: string, message?: string}>} - 返回上传结果
- * 
- * 标注数据格式示例：
- * [
- *   {
- *     name: "asr",  // 标注类型（如ASR、人工标注等）
- *     anno: [       // 标注内容数组
- *       { seg: [0.0, 1.2], text: "你好" },
- *       { seg: [1.5, 3.0], text: "世界" }
- *     ]
- *   },
- *   {
- *     name: "ref",
- *     anno: [{ seg: [0.5, 2.0], text: "参考文本" }]
- *   }
- * ]
-*/
-export const uploadAnnotations = async (utt, annotations) => {
-  try {
-    console.log('Uploading annotations...', annotations);
-    const response = await fetch(`${API_HOST}/api/anno/${utt}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ anno: annotations }),  // 与服务端字段一致
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return { status: 'success', ...result };
-  } catch (error) {
-    console.error('Failed to upload annotations:', error);
-    return { status: 'error', message: error.message };
-  }
-};
 
 /**
  * 上传/更新标注数据
@@ -106,7 +63,8 @@ export const updateAnnotation = async (username, datasetName, utt, annoData) => 
         username,
         dataset_name: datasetName,
         utt,
-        anno_data: annoData
+        anno_data: annoData,
+        task_name: "anno_task"
       })
     });
     return await response.json();
@@ -116,7 +74,26 @@ export const updateAnnotation = async (username, datasetName, utt, annoData) => 
     return { status: 'error', message: error.message };
   }
 };
-
+export const updateCheck = async (username, datasetName, utt, check_status) => {
+  try {
+    const response = await fetch(`${API_HOST}/api/update_anno`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        dataset_name: datasetName,
+        utt,
+        task_name: "check_task",
+        check_status: check_status,
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('更新标注失败:', error);
+    console.log('更新 username:', username, ' datasetName:', datasetName, ' utt:', utt, ' check_status:', check_status);
+    return { status: 'error', message: error.message };
+  }
+};
 
 
 /**
