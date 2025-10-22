@@ -192,6 +192,7 @@ const WERAnalysis = () => {
               onAudioReady={handleAudioReady}
               // activeRegionId={activeRegionId}
               key={audioData.audioId}
+              {...(minPxPerSec > 0 ? { minPxPerSec } : {})}
             />
           )}
         </div>

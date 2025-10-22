@@ -321,7 +321,7 @@ const AudioWaveform = forwardRef(({
         .find(plugin => plugin instanceof RegionsPlugin);
       
       if (!regionsPlugin) return null;
-      console.log('[AudioWaveform 接口] 创建区域 id ', externalId, ' ', start, ',', end);
+      // console.log('[AudioWaveform 接口] 创建区域 id ', externalId, ' ', start, ',', end);
       const region = regionsPlugin.addRegion({
         id: externalId || `region-${Date.now()}`,
         start,
