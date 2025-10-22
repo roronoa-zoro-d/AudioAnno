@@ -14,15 +14,27 @@ export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801
  * @returns {Promise<Array>} - 返回标注结果数组 
  * {anno: [{seg:[], text:"你好"}, {}]}
  */
-export const fetchAnnotation = async (datasetName, audioUrl) => {
+export const fetchAnnotation = async (datasetName, utt) => {
   try {
-    const utt = audioUrl.split('/').pop();
+    // const utt = audioUrl.split('/').pop();
     const response = await fetch(`${API_HOST}/api/anno/${datasetName}/${utt}`);
     const data = await response.json();
     return data.anno;
   } catch (error) {
     console.error('Failed to fetch annotations:', error);
     return [];
+  }
+};
+
+export const fetchAudioLabel = async (datasetName, utt) => {
+  try {
+    // const utt = audioUrl.split('/').pop();
+    const response = await fetch(`${API_HOST}/api/anno_label/${datasetName}/${utt}`);
+    const data = await response.json();
+    return data.audio_label;
+  } catch (error) {
+    console.error('Failed to fetch audio label:', error);
+    return {};
   }
 };
 
@@ -95,6 +107,27 @@ export const updateCheck = async (username, datasetName, utt, check_status) => {
   }
 };
 
+export const updateAudioLabel = async (username, datasetName, utt, label_key, label_value) => {
+  try {
+    const response = await fetch(`${API_HOST}/api/update_anno`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username,
+        dataset_name: datasetName,
+        utt,
+        task_name: "label_task",
+        label_data: {[label_key]: label_value},
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('更新标注失败:', error);
+    console.log('更新 username:', username, ' datasetName:', datasetName, ' utt:', utt, ' label:', {[label_key]: label_value});
+    return { status: 'error', message: error.message };
+  }
+};
+
 
 /**
  * 获取音频标注结果
@@ -116,74 +149,12 @@ export const fetchAnnotations = async (audioUrl) => {
 };
 
 
-/**
- * 合并两个标注结果
- * @param {Object} anno1 - 第一个标注结果   {name: asr, anno: [ {seg: [100, 200], text: "你好"}, {seg: [200, 300], text: "世界"}] }
- * @param {Object} anno2 - 第二个标注结果
- * @returns {Promise<Array>} - 返回合并后的标注结果数组 [{seg:[100,300], asr:"你好"， “ref”: "他好"}, {},... {}]
- */
-export const mergeAnnotations = async (anno1, anno2) => {
-  try {
-    const response = await fetch(`${API_HOST}/api/merge_annotations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        anno1: anno1,
-        anno2: anno2,
-      }),
-    });
-    const data = await response.json();
-    return data.results;
-  } catch (error) {
-    console.error('Failed to merge annotations:', error);
-    return [];
-  }
-};
 
 
-/**
- * 从 mergedData 中获取高亮区域
- * @param {Array} mergedData - 合并后的标注数据
- * @returns {Array} - 返回高亮区域数组
- */
-export const getRegions_mergeData = (mergedData) => {
-  return mergedData.map(seg_res => ({
-    start: seg_res.seg[0],
-    end: seg_res.seg[1] ,
-    color: 'rgba(255, 165, 0, 0.3)', // 合并区域使用橙色
-  }));
-};
 
-/**
- * 从 annotations 中获取高亮区域
- * @param {Array} selectedNames - 选中的标注名称
- * @param {Array} annotations - 所有标注数据
- * @returns {Array} - 返回高亮区域数组
- */
-export const getRegions_annos = (selectedNames, annotations) => {
-  const colors = [
-    'rgba(255, 0, 0, 0.3)', // 红色
-    'rgba(0, 255, 0, 0.3)', // 绿色
-    'rgba(0, 0, 255, 0.3)', // 蓝色
-    'rgba(255, 255, 0, 0.3)', // 黄色
-    'rgba(255, 0, 255, 0.3)', // 紫色
-    'rgba(0, 255, 255, 0.3)', // 青色
-    'rgba(128, 0, 128, 0.3)', // 深紫色
-    'rgba(255, 165, 0, 0.3)', // 橙色
-  ];
 
-  return selectedNames.flatMap(selectedName => {
-    const selectedAnnotation = annotations.find(anno => anno.name === selectedName);
-    const index = annotations.findIndex(anno => anno.name === selectedName);
-    return selectedAnnotation.anno.map(anno => ({
-      start: anno.seg[0],
-      end: anno.seg[1],
-      color: colors[index % colors.length],
-    }));
-  });
-};
+
+
 
 
 /**

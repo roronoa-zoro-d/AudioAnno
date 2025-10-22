@@ -14,6 +14,7 @@ import './SpeechAnno.css';
 import { useLocation } from 'react-router-dom';
 import { API_HOST } from './utils/apiService';
 import { useUser } from './UserContext';
+import LabelAnno from './LabelAnno';
 
 const QC_STATUS = [
   { value: 'verified', label: '质检通过', color: 'success' },
@@ -237,6 +238,7 @@ const LongAudioShow = () => {
         {/* 质检状态选择区域（多选一按钮） */}
         {audioData && !audioData.error && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>
+            {/* 质检状态按钮 */}
             <ToggleButtonGroup
               value={qcStatus}
               exclusive
@@ -258,6 +260,14 @@ const LongAudioShow = () => {
             {qcLoading && <CircularProgress size={20} sx={{ ml: 2 }} />}
             {qcError && <Typography color="error" sx={{ ml: 2 }}>{qcError}</Typography>}
             {qcSuccess && <Typography color="success.main" sx={{ ml: 2 }}>{qcSuccess}</Typography>}
+            {/* 语音质量标注按钮（右侧） */}
+            <LabelAnno
+              datasetName={datasetName}
+              audioId={audioData.audioId}
+              labelKey="audio_quality"
+              labelOptions={['背景人声', '环境噪声', '干净音频']}
+              username={username}
+            />
           </Box>
         )}
 
