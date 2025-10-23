@@ -237,30 +237,57 @@ const LongAudioShow = () => {
 
         {/* 质检状态选择区域（多选一按钮） */}
         {audioData && !audioData.error && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, my: 2 }}>
-            {/* 质检状态按钮 */}
-            <ToggleButtonGroup
-              value={qcStatus}
-              exclusive
-              onChange={handleQcStatusChange}
-              size="small"
-              disabled={qcLoading}
-            >
-              {QC_STATUS.map(item => (
-                <ToggleButton
-                  key={item.value}
-                  value={item.value}
-                  color={item.color}
-                  sx={{ minWidth: 100, fontWeight: 500 }}
-                >
-                  {item.label}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-            {qcLoading && <CircularProgress size={20} sx={{ ml: 2 }} />}
-            {qcError && <Typography color="error" sx={{ ml: 2 }}>{qcError}</Typography>}
-            {qcSuccess && <Typography color="success.main" sx={{ ml: 2 }}>{qcSuccess}</Typography>}
-            {/* 语音质量标注按钮（右侧） */}
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, my: 2 }}>
+            {/* 左侧：质检标注模块（样式与LabelAnno一致） */}
+            <Box sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              p: 2,
+              border: '1px solid #eee',
+              borderRadius: 2,
+              background: '#fafbfc',
+              mb: 2,
+              minWidth: 260,
+              maxWidth: 400,
+            }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                质检标注
+              </Typography>
+              <ToggleButtonGroup
+                value={qcStatus}
+                exclusive
+                onChange={handleQcStatusChange}
+                size="small"
+                disabled={qcLoading}
+                sx={{ mb: 1 }}
+              >
+                {QC_STATUS.map(item => (
+                  <ToggleButton
+                    key={item.value}
+                    value={item.value}
+                    sx={{
+                      minWidth: 100,
+                      fontWeight: 500,
+                      color: qcStatus === item.value ? '#fff' : undefined,
+                      bgcolor: qcStatus === item.value ? 'success.main' : undefined,
+                      '&.Mui-selected': {
+                        color: '#fff',
+                        bgcolor: 'success.main',
+                      },
+                    }}
+                  >
+                    {item.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+              <Box sx={{ minHeight: 28, mt: 1 }}>
+                {qcLoading && <CircularProgress size={18} sx={{ mr: 2 }} />}
+                {qcError && <Typography color="error" sx={{ display: 'inline-block' }}>{qcError}</Typography>}
+                {qcSuccess && <Typography color="success.main" sx={{ display: 'inline-block' }}>{qcSuccess}</Typography>}
+              </Box>
+            </Box>
+            {/* 右侧：语音质量标注按钮 */}
             <LabelAnno
               datasetName={datasetName}
               audioId={audioData.audioId}
