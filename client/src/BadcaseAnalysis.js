@@ -252,7 +252,7 @@ const BadcaseAnalysis = () => {
             <Alert severity="info" sx={{ mb: 3 }}>未找到可播放的音频地址。</Alert>
           )}
 
-          {/* 主内容区域：左图右标注 */}
+          {/* 优化：截图和标注内容并排，按钮紧跟描述 */}
           <Box sx={{
             display: 'flex',
             alignItems: 'flex-start',
@@ -302,9 +302,9 @@ const BadcaseAnalysis = () => {
               )}
             </Box>
 
-            {/* 右侧标注区域 */}
+            {/* 右侧标注区域，按钮紧跟描述 */}
             <Box sx={{ flex: 1.5, minWidth: 320 }}>
-              {/* 模型选择（多选一） */}
+              {/* 模型选择 */}
               {modelNames.length > 0 && (
                 <FormControl sx={{ mb: 2, minWidth: 240 }}>
                   <InputLabel id="model-select-label">选择模型结果</InputLabel>
@@ -322,7 +322,7 @@ const BadcaseAnalysis = () => {
                 </FormControl>
               )}
 
-              {/* 解决状态标签（多选一） */}
+              {/* 问题状态 */}
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="body2" sx={{ minWidth: 90 }}>问题状态：</Typography>
                 <ToggleButtonGroup
@@ -339,7 +339,7 @@ const BadcaseAnalysis = () => {
                 </ToggleButtonGroup>
               </Box>
 
-              {/* 问题分类标签 */}
+              {/* 问题分类 */}
               <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="body2" sx={{ minWidth: 90 }}>问题分类：</Typography>
                 <ToggleButtonGroup
@@ -358,39 +358,41 @@ const BadcaseAnalysis = () => {
 
               {/* 问题描述框 */}
               {audioData?.desc && (
-                <Box sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mr: 1 }}>问题描述：</Typography>
-                  <Box sx={{
-                    background: '#f5f5f5',
-                    borderRadius: 4,
-                    padding: 2,
-                    fontSize: 15,
-                    color: '#333',
-                    whiteSpace: 'pre-wrap',
-                    display: 'inline-block'
-                  }}>
-                    {audioData.desc}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mr: 1, minWidth: 90 }}>问题描述：</Typography>
+                    <Box sx={{
+                      background: '#f5f5f5',
+                      borderRadius: 4,
+                      padding: 2,
+                      fontSize: 15,
+                      color: '#333',
+                      whiteSpace: 'pre-wrap',
+                      display: 'inline-block',
+                      flex: 1
+                    }}>
+                      {audioData.desc}
+                    </Box>
+                  </Box>
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-start' }}>
+                    <button
+                      style={{
+                        padding: '8px 24px',
+                        background: '#1976d2',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                        fontSize: 16,
+                        height: '40px'
+                      }}
+                      onClick={handleUploadBadcase}
+                    >
+                      上传标注
+                    </button>
                   </Box>
                 </Box>
               )}
-
-              {/* 上传按钮紧跟问题描述 */}
-              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  style={{
-                    padding: '8px 24px',
-                    background: '#1976d2',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 4,
-                    cursor: 'pointer',
-                    fontSize: 16
-                  }}
-                  onClick={handleUploadBadcase}
-                >
-                  上传标注
-                </button>
-              </Box>
             </Box>
           </Box>
 
