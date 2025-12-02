@@ -253,23 +253,30 @@ const BadcaseAnalysis = () => {
           )}
 
           {/* 优化：截图和标注内容并排，按钮紧跟描述 */}
-          <Box sx={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: 4,
-            mb: 3,
-            minHeight: 360
-          }}>
-            {/* 左侧截图，尽可能大展示 */}
-            <Box sx={{
-              flex: 1.2,
+          <Box
+            sx={{
               display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              minWidth: 320,
-              maxWidth: 600
-            }}>
+              alignItems: 'flex-start',
+              gap: 4,
+              mb: 3,
+              minHeight: 360,
+              width: '100%',
+              flexWrap: { xs: 'wrap', md: 'nowrap' } // 小屏换行，大屏并排
+            }}
+          >
+            {/* 左侧截图区域 */}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                minWidth: 260,
+                // maxWidth: 600, // 可以去掉
+                width: '100%'
+              }}
+            >
               {imgUrl ? (
                 <>
                   <Typography variant="body2" sx={{ mb: 1 }}>截图预览：</Typography>
@@ -302,8 +309,14 @@ const BadcaseAnalysis = () => {
               )}
             </Box>
 
-            {/* 右侧标注区域，按钮紧跟描述 */}
-            <Box sx={{ flex: 1.5, minWidth: 320 }}>
+            {/* 右侧标注区域 */}
+            <Box
+              sx={{
+                flex: 1,
+                minWidth: 320,
+                width: '100%'
+              }}
+            >
               {/* 模型选择 */}
               {modelNames.length > 0 && (
                 <FormControl sx={{ mb: 2, minWidth: 240 }}>
