@@ -13,6 +13,9 @@ import { UserProvider } from './UserContext';
 import './App.css';
 import LongAudioShow from './LongAudioShow';
 import ShortAudioShow from './ShortAudioShow';
+import BadcaseUpload from './BadcaseUpload';
+import BadcaseAnalysis from './BadcaseAnalysis';
+import BadcaseOverview from './BadcaseOverview';
 
 function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -33,6 +36,10 @@ function App() {
                 <Route path="/dataset/:name" element={<DatasetDetail />} />
                 <Route path="/speech-show/long" element={<LongAudioShow />} />
                 <Route path="/speech-show/short" element={<ShortAudioShow />} />
+                <Route path="/badcase/upload" element={<BadcaseUpload />} />
+                <Route path="/badcase/analysis" element={<BadcaseAnalysis />} />
+                <Route path="/badcase/analysis/:audioName" element={<BadcaseAnalysis />} />
+                <Route path="/badcase/overview" element={<BadcaseOverview />} />
               </Routes>
             </div>
           </div>

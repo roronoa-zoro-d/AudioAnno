@@ -3,8 +3,8 @@
  *  一个音频的标注结果： {name: asr, anno: anno}
  * 一个音频的多个标注结果 [{name: asr, anno: anno}, {name: ref, anno: anno}]
  */
-export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
-// export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9802';
+// export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
+export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9802';
 
 
 
@@ -148,9 +148,52 @@ export const fetchAnnotations = async (audioUrl) => {
   }
 };
 
+/**
+ * 对比标注结果和模型结果，发送到服务端处理
+ * @param {Array} annoData - 标注结果数组
+ * @param {Array} modelAnnoData - 模型结果数组
+ * @returns {Promise<Object>} - 服务端返回处理结果
+ */
+export async function compareSegments(annoData, modelAnnoData) {
+  try {
+    const response = await fetch(`${API_HOST}/api/compare_segments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        annoData,
+        modelAnnoData
+      })
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to compare segments:', error);
+    return { status: 'error', message: error.message };
+  }
+}
 
 
+// ...existing code...
 
+/**
+ * 上传badcase标注结果
+ * @param {Object} payload - {audioName, modelName, solveStatus, problemType}
+ * @returns {Promise<Object>} - 服务端返回结果，包含status字段
+ */
+export async function update_badcase(payload) {
+  try {
+    const response = await fetch(`${API_HOST}/api/update_badcase`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return await response.json();
+  } catch (error) {
+    return { status: 'error', message: error.message };
+  }
+}
+
+// ...existing code...
 
 
 
@@ -198,3 +241,45 @@ export const activateDataset = async (datasetName) => {
 };
 
 
+// badcase 模块
+
+// 上传 badcase 数据
+export async function upload_badcase(formData) {
+  try {
+    const res = await fetch(`${API_HOST}/api/upload_badcase`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data?.status === true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// 新增：获取 badcase 总览数据
+export async function fetch_badcase_overview() {
+  try {
+    const res = await fetch(`${API_HOST}/api/badcase_list`);
+    if (!res.ok) throw new Error('network');
+    const data = await res.json();
+    // 期望 data = { show_keys: [...], show_datas: [...] }
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message || 'fetch error' };
+  }
+}
+
+// 新增：根据 audioName 获取单条 badcase 详情
+export async function fetch_badcase_detail(utt) {
+  try {
+    const url = `${API_HOST}/api/badcase/${utt}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = await res.json();
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message || 'fetch error' };
+  }
+}

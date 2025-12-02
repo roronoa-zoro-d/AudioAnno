@@ -25,7 +25,8 @@ const Navigation = ({ collapsed, setCollapsed }) => {
       </div>
       
       <nav className="nav-menu">
-        <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
+
+         {/* <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
           <div className="nav-title">语音标注</div>
           <div className="nav-subitems">
             <NavLink to="/speech-annotation/long" className="nav-item">
@@ -63,13 +64,32 @@ const Navigation = ({ collapsed, setCollapsed }) => {
           </div>
         </div>
 
-        {/* 新增数据集管理菜单 */}
+        
         <div className={`nav-group ${isActivePath('/datasetManager') ? 'active' : ''}`}>
           <div className="nav-title">数据集管理</div>
           <div className="nav-subitems">
             <NavLink to="/datasetManager/dataset" className="nav-item">
               <span className="icon">🗂️</span>
               {!collapsed && <span>数据集</span>}
+            </NavLink>
+          </div>
+        </div>
+          */}
+
+        <div className={`nav-group ${isActivePath('/badcase') ? 'active' : ''}`}>
+          <div className="nav-title">badcase分析</div>
+          <div className="nav-subitems">
+            <NavLink to="/badcase/upload" className="nav-item">
+              <span className="icon">⬆️</span>
+              {!collapsed && <span>badcase数据上传</span>}
+            </NavLink>
+            <NavLink to="/badcase/analysis" className="nav-item">
+              <span className="icon">📈</span>
+              {!collapsed && <span>badcase数据分析</span>}
+            </NavLink>
+            <NavLink to="/badcase/overview" className="nav-item">
+              <span className="icon">👁️</span>
+              {!collapsed && <span>badcase数据总览</span>}
             </NavLink>
           </div>
         </div>
