@@ -273,8 +273,8 @@ const BadcaseAnalysis = () => {
                 alignItems: 'center',
                 justifyContent: 'flex-start',
                 minWidth: 260,
-                // maxWidth: 600, // 可以去掉
-                width: '100%'
+                width: '100%',
+                height: '100%' // 新增
               }}
             >
               {imgUrl ? (
@@ -285,10 +285,8 @@ const BadcaseAnalysis = () => {
                     alt="截图预览"
                     style={{
                       width: '100%',
-                      maxWidth: 520,
-                      height: 'auto',
-                      maxHeight: 400,
-                      objectFit: 'contain',
+                      height: '100%', // 新增
+                      objectFit: 'contain', // 保证图片完整显示
                       borderRadius: 8,
                       cursor: 'pointer',
                       border: '1px solid #ccc',
