@@ -3,6 +3,7 @@ export const SOLVE_OPTIONS = [
   '已解决',
   '未解决',
   '解决部分',
+  '暂不解决',
 ];
 
 export const PROBLEM_TYPES = [
@@ -17,4 +18,15 @@ export const ENV_OPTIONS = [
   '生产环境',
   '测试环境',
   '试点环境'
+];
+
+// process_status 问题解决状态
+export const PROCESS_STATUS = [
+  '已发布',
+  '优化中',
+  '待发布生产',
+  '非问题',
+  '远期考虑',
+
+
 ];

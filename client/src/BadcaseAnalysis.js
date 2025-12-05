@@ -9,7 +9,7 @@ import { fetch_badcase_detail, API_HOST, compareSegments, update_badcase } from 
 import AudioWaveform from './AudioWaveform';
 // import { getColumnsByParams } from './tableColumns';
 import WerTable from './WerTable'; // 新增导入
-import {PROBLEM_TYPES, SOLVE_OPTIONS} from './BadcaseConfig'
+import {PROBLEM_TYPES, SOLVE_OPTIONS, PROCESS_STATUS} from './BadcaseConfig'
 
 // const SOLVE_OPTIONS = [
 //   { value: 'solved', label: '已解决' },
@@ -48,6 +48,7 @@ const BadcaseAnalysis = () => {
   // 标签
   const [solveStatus, setSolveStatus] = useState();
   const [problemType, setProblemType] = useState();
+  const [processStatus, setProcessStatus] = useState();
 
 //   const columns = getColumnsByParams([['index', 'timeRange', 'textEdit'],[]]);
 
@@ -111,10 +112,15 @@ const BadcaseAnalysis = () => {
     if (res.data.problemType) {
         setProblemType(res.data.problemType);
     }
-    // 根据模型结果，设置解决状态
+    // 根据模型结果，设置解决状态和处理状态
     const curModel = res.data.model_annos?.find(m => m.model_name === curModelNameRef.current);
-    if (curModel && curModel.anno_label && curModel.anno_label.solve_status) {
-        setSolveStatus(curModel.anno_label.solve_status);
+    if (curModel && curModel.anno_label) {
+        if (curModel.anno_label.solve_status) {
+            setSolveStatus(curModel.anno_label.solve_status);
+        }
+        if (curModel.anno_label.process_status) {
+            setProcessStatus(curModel.anno_label.process_status);
+        }
     }
 
 
@@ -198,6 +204,7 @@ const BadcaseAnalysis = () => {
       modelName: curModelNameRef.current,
       solveStatus,      // 直接上传中文
       problemType,      // 直接上传中文
+      process_status: processStatus,  // 上传数据的key为小写
     };
     try {
       const res = await update_badcase(payload);
@@ -362,6 +369,23 @@ const BadcaseAnalysis = () => {
                   {PROBLEM_TYPES.map(type => (
                     <ToggleButton key={type} value={type}>
                       {type}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              </Box>
+
+              {/* 处理状态 */}
+              <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Typography variant="body2" sx={{ minWidth: 90 }}>处理状态：</Typography>
+                <ToggleButtonGroup
+                  value={processStatus}
+                  exclusive
+                  onChange={(_, v) => v && setProcessStatus(v)}
+                  size="small"
+                >
+                  {PROCESS_STATUS.map(status => (
+                    <ToggleButton key={status} value={status}>
+                      {status}
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>

@@ -283,3 +283,23 @@ export async function fetch_badcase_detail(utt) {
     return { ok: false, error: err.message || 'fetch error' };
   }
 }
+
+// 新增：更新 badcase 表格数据
+export async function update_badcase_table(utt, key_name, key_val) {
+  try {
+    const res = await fetch(`${API_HOST}/api/update_badcase_table`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        utt,
+        key_name,
+        key_val
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message || 'update error' };
+  }
+}

@@ -1,10 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Typography, TableContainer, Paper, Table, TableHead, TableRow,
-  TableCell, TableBody, CircularProgress, Alert
+  TableCell, TableBody, CircularProgress, Alert, Dialog, DialogTitle,
+  DialogContent, DialogActions, Button, List, ListItem, ListItemText,
+  Divider, Chip, IconButton, Tooltip, TextField, Snackbar
 } from '@mui/material';
-import { fetch_badcase_overview } from './utils/apiService';
+import MuiAlert from '@mui/material/Alert';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import EditIcon from '@mui/icons-material/Edit';
+import CheckIcon from '@mui/icons-material/Check';
+import CloseIcon from '@mui/icons-material/Close';
+import { fetch_badcase_overview, update_badcase_table } from './utils/apiService';
 
 
 
@@ -14,6 +23,21 @@ const BadcaseOverview = () => {
   const [showKeys, setShowKeys] = useState([]);
   const [showLabels, setShowLabels] = useState([]);
   const [rows, setRows] = useState([]);
+  const [editableKeys, setEditableKeys] = useState([]); // 可编辑的列列表
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: 'asc' // 'asc' | 'desc' | null
+  });
+  const [distributionDialog, setDistributionDialog] = useState({
+    open: false,
+    columnKey: null,
+    columnLabel: null,
+    distribution: []
+  });
+  // 编辑状态：{ rowIndex, columnKey, value }
+  const [editingCell, setEditingCell] = useState(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -27,15 +51,171 @@ const BadcaseOverview = () => {
         setLoading(false);
         return;
       }
-      const { show_keys, show_labels, show_datas } = res.data || {};
+      const { show_keys, show_labels, show_datas, editable_keys } = res.data || {};
       setShowKeys(Array.isArray(show_keys) ? show_keys : []);
       setShowLabels(Array.isArray(show_labels) ? show_labels : []);
       setRows(Array.isArray(show_datas) ? show_datas : []);
+      // 从服务端获取可编辑的列列表
+      setEditableKeys(Array.isArray(editable_keys) ? editable_keys : []);
       setLoading(false);
       console.log('Badcase overview data:', show_datas);
+      console.log('Editable keys:', editable_keys);
     })();
     return () => { mounted = false; };
   }, []);
+
+  // 排序后的数据
+  const sortedRows = useMemo(() => {
+    if (!sortConfig.key) return rows;
+    
+    const sorted = [...rows].sort((a, b) => {
+      const aVal = String(a[sortConfig.key] ?? '').trim();
+      const bVal = String(b[sortConfig.key] ?? '').trim();
+      
+      // 尝试数字比较
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+      
+      // 字符串比较
+      if (sortConfig.direction === 'asc') {
+        return aVal.localeCompare(bVal, 'zh-CN');
+      } else {
+        return bVal.localeCompare(aVal, 'zh-CN');
+      }
+    });
+    
+    return sorted;
+  }, [rows, sortConfig]);
+
+  // 处理排序
+  const handleSort = (columnKey, e) => {
+    e.stopPropagation();
+    
+    if (sortConfig.key === columnKey) {
+      // 切换排序方向：asc -> desc -> null
+      if (sortConfig.direction === 'asc') {
+        setSortConfig({ key: columnKey, direction: 'desc' });
+      } else if (sortConfig.direction === 'desc') {
+        setSortConfig({ key: null, direction: null });
+      }
+    } else {
+      // 新列，默认升序
+      setSortConfig({ key: columnKey, direction: 'asc' });
+    }
+  };
+
+  // 计算列的数据分布
+  const calculateDistribution = (columnKey) => {
+    const distribution = {};
+    let totalCount = 0;
+    
+    rows.forEach((row) => {
+      const value = String(row[columnKey] ?? '').trim();
+      const displayValue = value || '(空值)';
+      distribution[displayValue] = (distribution[displayValue] || 0) + 1;
+      totalCount++;
+    });
+
+    // 转换为数组并按数量降序排序
+    const distributionArray = Object.entries(distribution)
+      .map(([value, count]) => ({
+        value,
+        count,
+        percentage: totalCount > 0 ? ((count / totalCount) * 100).toFixed(2) : '0.00'
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return { distribution: distributionArray, totalCount };
+  };
+
+  // 处理统计按钮点击
+  const handleStatisticsClick = (columnKey, columnLabel, e) => {
+    e.stopPropagation(); // 阻止事件冒泡
+    const { distribution, totalCount } = calculateDistribution(columnKey);
+    setDistributionDialog({
+      open: true,
+      columnKey,
+      columnLabel,
+      distribution,
+      totalCount
+    });
+  };
+
+  // 关闭对话框
+  const handleCloseDialog = () => {
+    setDistributionDialog({
+      open: false,
+      columnKey: null,
+      columnLabel: null,
+      distribution: [],
+      totalCount: 0
+    });
+  };
+
+  // 开始编辑单元格
+  const handleStartEdit = (rowIndex, columnKey, currentValue, e) => {
+    e.stopPropagation(); // 阻止行点击事件
+    if (!editableKeys.includes(columnKey)) {
+      setSnackbar({ open: true, message: '此字段不可编辑', severity: 'warning' });
+      return;
+    }
+    setEditingCell({ rowIndex, columnKey });
+    setEditingValue(String(currentValue ?? ''));
+  };
+
+  // 取消编辑
+  const handleCancelEdit = (e) => {
+    if (e) e.stopPropagation();
+    setEditingCell(null);
+    setEditingValue('');
+  };
+
+  // 保存编辑
+  const handleSaveEdit = async (e) => {
+    if (e) e.stopPropagation();
+    if (!editingCell) return;
+
+    const { rowIndex, columnKey } = editingCell;
+    const row = sortedRows[rowIndex];
+    const utt = row['utt'];
+    
+    if (!utt) {
+      setSnackbar({ open: true, message: '缺少音频标识，无法更新', severity: 'error' });
+      handleCancelEdit();
+      return;
+    }
+
+    try {
+      const res = await update_badcase_table(utt, columnKey, editingValue);
+      if (res.ok) {
+        // 更新本地数据
+        const newRows = [...rows];
+        const originalIndex = rows.findIndex(r => r.utt === utt);
+        if (originalIndex !== -1) {
+          newRows[originalIndex] = { ...newRows[originalIndex], [columnKey]: editingValue };
+          setRows(newRows);
+        }
+        setSnackbar({ open: true, message: '更新成功', severity: 'success' });
+        handleCancelEdit();
+      } else {
+        setSnackbar({ open: true, message: res.error || '更新失败', severity: 'error' });
+      }
+    } catch (error) {
+      setSnackbar({ open: true, message: '更新失败: ' + error.message, severity: 'error' });
+    }
+  };
+
+  // 处理输入框按键事件
+  const handleEditKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit(e);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit(e);
+    }
+  };
 
   if (loading) {
     return (
@@ -78,32 +258,108 @@ const BadcaseOverview = () => {
             <TableHead>
               <TableRow sx={{ background: '#f5faff' }}>
                 <TableCell sx={{ width: 60, fontWeight: 700, background: '#f5faff', color: '#1976d2' }}>#</TableCell>
-                {showKeys.map((k, idx) => (
-                  <TableCell
-                    key={k}
-                    sx={{
-                      whiteSpace: 'nowrap',
-                      maxWidth: 300,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      fontWeight: 700,
-                      background: '#f5faff',
-                      color: '#1976d2'
-                    }}
-                  >
-                    {showLabels[idx] || k}
-                  </TableCell>
-                ))}
+                {showKeys.map((k, idx) => {
+                  const isSorted = sortConfig.key === k;
+                  const sortIcon = isSorted && sortConfig.direction === 'asc' 
+                    ? <ArrowUpwardIcon fontSize="small" /> 
+                    : isSorted && sortConfig.direction === 'desc'
+                    ? <ArrowDownwardIcon fontSize="small" />
+                    : <ArrowUpwardIcon fontSize="small" sx={{ opacity: 0.3 }} />;
+                  
+                  return (
+                    <TableCell
+                      key={k}
+                      sx={{
+                        whiteSpace: 'nowrap',
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        fontWeight: 700,
+                        background: '#f5faff',
+                        color: '#1976d2',
+                        textAlign: 'center',
+                        py: 1.5
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 0.5
+                        }}
+                      >
+                        <Typography
+                          component="span"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          {showLabels[idx] || k}
+                        </Typography>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 0.5
+                          }}
+                        >
+                          <Tooltip title="排序">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleSort(k, e)}
+                              sx={{
+                                padding: '2px',
+                                color: isSorted ? '#1976d2' : '#999',
+                                '&:hover': {
+                                  background: 'rgba(25, 118, 210, 0.1)'
+                                }
+                              }}
+                            >
+                              {sortIcon}
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="数据分布统计">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleStatisticsClick(k, showLabels[idx] || k, e)}
+                              sx={{
+                                padding: '2px',
+                                color: '#999',
+                                '&:hover': {
+                                  background: 'rgba(25, 118, 210, 0.1)',
+                                  color: '#1976d2'
+                                }
+                              }}
+                            >
+                              <BarChartIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                  );
+                })}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((item, idx) => {
+              {sortedRows.map((item, idx) => {
                 const audioName = item['utt'];
                 return (
                   <TableRow
                     key={idx}
                     hover
-                    onClick={() => {
+                    onClick={(e) => {
+                      // 如果正在编辑，不触发跳转
+                      if (editingCell?.rowIndex === idx) {
+                        return;
+                      }
                       if (audioName) {
                         navigate(`/badcase/analysis/${encodeURIComponent(audioName)}`);
                       } else {
@@ -117,22 +373,117 @@ const BadcaseOverview = () => {
                     }}
                   >
                     <TableCell sx={{ fontWeight: 500, color: '#1976d2' }}>{idx + 1}</TableCell>
-                    {showKeys.map((k) => (
-                      <TableCell
-                        key={k}
-                        sx={{
-                          maxWidth: 400,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          fontSize: 15,
-                          color: item[k] ? '#333' : '#bbb',
-                          background: idx % 2 === 0 ? '#fafafa' : '#fff'
-                        }}
-                      >
-                        {String(item[k] ?? '')}
-                      </TableCell>
-                    ))}
+                    {showKeys.map((k) => {
+                      const isEditing = editingCell?.rowIndex === idx && editingCell?.columnKey === k;
+                      const isEditable = editableKeys.includes(k);
+                      const cellValue = String(item[k] ?? '');
+                      
+                      return (
+                        <TableCell
+                          key={k}
+                          onClick={(e) => {
+                            if (isEditable && !isEditing) {
+                              handleStartEdit(idx, k, item[k], e);
+                            }
+                          }}
+                          sx={{
+                            maxWidth: 400,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            fontSize: 15,
+                            color: item[k] ? '#333' : '#bbb',
+                            background: idx % 2 === 0 ? '#fafafa' : '#fff',
+                            position: 'relative',
+                            cursor: isEditable ? 'pointer' : 'default',
+                            '&:hover': isEditable && !isEditing ? {
+                              background: '#e3f2fd'
+                            } : {}
+                          }}
+                        >
+                          {isEditing ? (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                width: '100%'
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <TextField
+                                value={editingValue}
+                                onChange={(e) => setEditingValue(e.target.value)}
+                                onKeyDown={handleEditKeyDown}
+                                size="small"
+                                autoFocus
+                                fullWidth
+                                sx={{
+                                  '& .MuiInputBase-root': {
+                                    fontSize: 15,
+                                    padding: '4px 8px'
+                                  }
+                                }}
+                              />
+                              <IconButton
+                                size="small"
+                                onClick={handleSaveEdit}
+                                sx={{
+                                  color: '#4caf50',
+                                  padding: '4px',
+                                  '&:hover': { background: 'rgba(76, 175, 80, 0.1)' }
+                                }}
+                              >
+                                <CheckIcon fontSize="small" />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={handleCancelEdit}
+                                sx={{
+                                  color: '#f44336',
+                                  padding: '4px',
+                                  '&:hover': { background: 'rgba(244, 67, 54, 0.1)' }
+                                }}
+                              >
+                                <CloseIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                width: '100%'
+                              }}
+                            >
+                              <Typography
+                                component="span"
+                                sx={{
+                                  flex: 1,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {cellValue}
+                              </Typography>
+                              {isEditable && (
+                                <EditIcon
+                                  sx={{
+                                    fontSize: 14,
+                                    color: '#999',
+                                    opacity: 0.6,
+                                    ml: 0.5,
+                                    flexShrink: 0
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 );
               })}
@@ -147,6 +498,89 @@ const BadcaseOverview = () => {
           </Table>
         </TableContainer>
       )}
+      
+      {/* 数据分布对话框 */}
+      <Dialog
+        open={distributionDialog.open}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: 18
+        }}>
+          数据分布统计 - {distributionDialog.columnLabel}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              总计: <strong>{distributionDialog.totalCount || 0}</strong> 条记录
+            </Typography>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {distributionDialog.distribution.length === 0 ? (
+              <ListItem>
+                <ListItemText primary="暂无数据" />
+              </ListItem>
+            ) : (
+              distributionDialog.distribution.map((item, idx) => (
+                <React.Fragment key={idx}>
+                  <ListItem
+                    sx={{
+                      py: 1.5,
+                      '&:hover': {
+                        background: '#f5f5f5'
+                      }
+                    }}
+                  >
+                    <ListItemText
+                      primary={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body1" sx={{ flex: 1, wordBreak: 'break-word' }}>
+                            {item.value}
+                          </Typography>
+                          <Chip
+                            label={`${item.count} (${item.percentage}%)`}
+                            color="primary"
+                            size="small"
+                            sx={{ fontWeight: 600 }}
+                          />
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {idx < distributionDialog.distribution.length - 1 && <Divider />}
+                </React.Fragment>
+              ))
+            )}
+          </List>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseDialog} variant="contained" color="primary">
+            关闭
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 消息提示 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <MuiAlert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };
