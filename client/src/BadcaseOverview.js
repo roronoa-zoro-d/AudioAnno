@@ -4,12 +4,14 @@ import {
   Box, Typography, TableContainer, Paper, Table, TableHead, TableRow,
   TableCell, TableBody, CircularProgress, Alert, Dialog, DialogTitle,
   DialogContent, DialogActions, Button, List, ListItem, ListItemText,
-  Divider, Chip, IconButton, Tooltip, TextField, Snackbar
+  Divider, Chip, IconButton, Tooltip, TextField, Snackbar, Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
@@ -33,6 +35,15 @@ const BadcaseOverview = () => {
     columnKey: null,
     columnLabel: null,
     distribution: []
+  });
+  // 筛选状态：{ columnKey: [selectedValues] }
+  const [filters, setFilters] = useState({});
+  const [filterDialog, setFilterDialog] = useState({
+    open: false,
+    columnKey: null,
+    columnLabel: null,
+    distribution: [],
+    selectedValues: []
   });
   // 编辑状态：{ rowIndex, columnKey, value }
   const [editingCell, setEditingCell] = useState(null);
@@ -64,11 +75,24 @@ const BadcaseOverview = () => {
     return () => { mounted = false; };
   }, []);
 
-  // 排序后的数据
-  const sortedRows = useMemo(() => {
-    if (!sortConfig.key) return rows;
+  // 筛选和排序后的数据
+  const filteredAndSortedRows = useMemo(() => {
+    // 先应用筛选
+    let filtered = rows;
+    Object.entries(filters).forEach(([columnKey, selectedValues]) => {
+      if (selectedValues && selectedValues.length > 0) {
+        filtered = filtered.filter(row => {
+          const value = String(row[columnKey] ?? '').trim();
+          const displayValue = value || '(空值)';
+          return selectedValues.includes(displayValue);
+        });
+      }
+    });
+
+    // 再应用排序
+    if (!sortConfig.key) return filtered;
     
-    const sorted = [...rows].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       const aVal = String(a[sortConfig.key] ?? '').trim();
       const bVal = String(b[sortConfig.key] ?? '').trim();
       
@@ -88,7 +112,7 @@ const BadcaseOverview = () => {
     });
     
     return sorted;
-  }, [rows, sortConfig]);
+  }, [rows, sortConfig, filters]);
 
   // 处理排序
   const handleSort = (columnKey, e) => {
@@ -144,6 +168,76 @@ const BadcaseOverview = () => {
     });
   };
 
+  // 处理筛选按钮点击
+  const handleFilterClick = (columnKey, columnLabel, e) => {
+    e.stopPropagation(); // 阻止事件冒泡
+    const { distribution } = calculateDistribution(columnKey);
+    const currentFilter = filters[columnKey] || [];
+    setFilterDialog({
+      open: true,
+      columnKey,
+      columnLabel,
+      distribution,
+      selectedValues: [...currentFilter]
+    });
+  };
+
+  // 处理筛选值选择
+  const handleFilterValueToggle = (value) => {
+    setFilterDialog(prev => {
+      const selectedValues = prev.selectedValues || [];
+      const newSelected = selectedValues.includes(value)
+        ? selectedValues.filter(v => v !== value)
+        : [...selectedValues, value];
+      return { ...prev, selectedValues: newSelected };
+    });
+  };
+
+  // 全选/取消全选
+  const handleFilterSelectAll = () => {
+    setFilterDialog(prev => {
+      const allValues = prev.distribution.map(item => item.value);
+      const isAllSelected = allValues.every(val => prev.selectedValues.includes(val));
+      return {
+        ...prev,
+        selectedValues: isAllSelected ? [] : [...allValues]
+      };
+    });
+  };
+
+  // 应用筛选
+  const handleApplyFilter = () => {
+    const { columnKey, selectedValues } = filterDialog;
+    // 如果筛选为空，删除该列的筛选
+    if (selectedValues.length === 0) {
+      setFilters(prev => {
+        const newFilters = { ...prev };
+        delete newFilters[columnKey];
+        return newFilters;
+      });
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [columnKey]: selectedValues
+      }));
+    }
+    setFilterDialog({ open: false, columnKey: null, columnLabel: null, distribution: [], selectedValues: [] });
+  };
+
+  // 清除筛选
+  const handleClearFilter = (columnKey) => {
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      delete newFilters[columnKey];
+      return newFilters;
+    });
+  };
+
+  // 关闭筛选对话框
+  const handleCloseFilterDialog = () => {
+    setFilterDialog({ open: false, columnKey: null, columnLabel: null, distribution: [], selectedValues: [] });
+  };
+
   // 关闭对话框
   const handleCloseDialog = () => {
     setDistributionDialog({
@@ -179,7 +273,7 @@ const BadcaseOverview = () => {
     if (!editingCell) return;
 
     const { rowIndex, columnKey } = editingCell;
-    const row = sortedRows[rowIndex];
+    const row = filteredAndSortedRows[rowIndex];
     const utt = row['utt'];
     
     if (!utt) {
@@ -341,6 +435,43 @@ const BadcaseOverview = () => {
                               <BarChartIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title={filters[k] && filters[k].length > 0 ? `筛选中 (${filters[k].length}项)` : "筛选"}>
+                            <Box sx={{ position: 'relative' }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleFilterClick(k, showLabels[idx] || k, e)}
+                                sx={{
+                                  padding: '2px',
+                                  color: filters[k] && filters[k].length > 0 ? '#ff9800' : '#999',
+                                  '&:hover': {
+                                    background: 'rgba(25, 118, 210, 0.1)',
+                                    color: '#1976d2'
+                                  }
+                                }}
+                              >
+                                <FilterListIcon fontSize="small" />
+                              </IconButton>
+                              {filters[k] && filters[k].length > 0 && (
+                                <Chip
+                                  label={filters[k].length}
+                                  size="small"
+                                  sx={{
+                                    position: 'absolute',
+                                    top: -4,
+                                    right: -4,
+                                    height: 16,
+                                    minWidth: 16,
+                                    fontSize: '0.65rem',
+                                    backgroundColor: '#ff9800',
+                                    color: '#fff',
+                                    '& .MuiChip-label': {
+                                      padding: '0 4px'
+                                    }
+                                  }}
+                                />
+                              )}
+                            </Box>
+                          </Tooltip>
                         </Box>
                       </Box>
                     </TableCell>
@@ -349,7 +480,7 @@ const BadcaseOverview = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {sortedRows.map((item, idx) => {
+              {filteredAndSortedRows.map((item, idx) => {
                 const audioName = item['utt'];
                 return (
                   <TableRow
@@ -562,6 +693,113 @@ const BadcaseOverview = () => {
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={handleCloseDialog} variant="contained" color="primary">
             关闭
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 筛选对话框 */}
+      <Dialog
+        open={filterDialog.open}
+        onClose={handleCloseFilterDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: 18
+        }}>
+          筛选 - {filterDialog.columnLabel}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              选择要显示的值（支持多选）
+            </Typography>
+            <Button
+              size="small"
+              onClick={handleFilterSelectAll}
+              variant="outlined"
+            >
+              {filterDialog.distribution.every(item => filterDialog.selectedValues.includes(item.value))
+                ? '取消全选' : '全选'}
+            </Button>
+          </Box>
+          <Divider sx={{ mb: 2 }} />
+          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {filterDialog.distribution.length === 0 ? (
+              <ListItem>
+                <ListItemText primary="暂无数据" />
+              </ListItem>
+            ) : (
+              filterDialog.distribution.map((item, idx) => {
+                const isSelected = filterDialog.selectedValues.includes(item.value);
+                return (
+                  <React.Fragment key={idx}>
+                    <ListItem
+                      sx={{
+                        py: 1,
+                        '&:hover': {
+                          background: '#f5f5f5'
+                        }
+                      }}
+                    >
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={() => handleFilterValueToggle(item.value)}
+                            color="primary"
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
+                            <Typography variant="body1" sx={{ flex: 1, wordBreak: 'break-word' }}>
+                              {item.value}
+                            </Typography>
+                            <Chip
+                              label={`${item.count} (${item.percentage}%)`}
+                              color="primary"
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          </Box>
+                        }
+                        sx={{ width: '100%', margin: 0 }}
+                      />
+                    </ListItem>
+                    {idx < filterDialog.distribution.length - 1 && <Divider />}
+                  </React.Fragment>
+                );
+              })
+            )}
+          </List>
+          {filterDialog.selectedValues.length > 0 && (
+            <Box sx={{ mt: 2, p: 1, background: '#e3f2fd', borderRadius: 1 }}>
+              <Typography variant="body2" color="primary">
+                已选择 {filterDialog.selectedValues.length} 项
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={handleCloseFilterDialog}>
+            取消
+          </Button>
+          {filters[filterDialog.columnKey] && filters[filterDialog.columnKey].length > 0 && (
+            <Button
+              onClick={() => {
+                handleClearFilter(filterDialog.columnKey);
+                handleCloseFilterDialog();
+              }}
+              color="warning"
+            >
+              清除筛选
+            </Button>
+          )}
+          <Button onClick={handleApplyFilter} variant="contained" color="primary">
+            应用筛选
           </Button>
         </DialogActions>
       </Dialog>
