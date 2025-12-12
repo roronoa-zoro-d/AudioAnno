@@ -11,7 +11,7 @@ export const PROBLEM_TYPES = [
   '漏转写',
   'vad漏切分-语音概率低',
   'vad漏切分-切分规则',
-  '噪声导致切分错误'，
+  '噪声导致切分错误',
 ];
 
 // ENV_OPTIONS 直接用中文列表
