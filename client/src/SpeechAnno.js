@@ -395,13 +395,20 @@ const SpeechAnno = () => {
               username={username}
               currentStatus={audioStates[audioData.audioId]?.check_status || ''}
               onStatusChange={(newStatus) => {
-                setAudioStates(prev => ({
-                  ...prev,
-                  [audioData.audioId]: {
+                setAudioStates(prev => {
+                  const updatedState = {
                     ...(prev[audioData.audioId] || {}),
                     check_status: newStatus,
-                  },
-                }));
+                  };
+                  // 如果质检状态为 rejected（需重标），则同时将 anno_status 设置为 unlabeled（未标注）
+                  if (newStatus === 'rejected') {
+                    updatedState.anno_status = 'unlabeled';
+                  }
+                  return {
+                    ...prev,
+                    [audioData.audioId]: updatedState,
+                  };
+                });
               }}
             />
             <LabelAnno
