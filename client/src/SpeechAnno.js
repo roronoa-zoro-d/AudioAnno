@@ -16,6 +16,7 @@ import './SpeechAnno.css';
 import { useLocation } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { API_HOST } from './utils/apiService';
+import LabelAnno from './LabelAnno';
 
 // 纯排序函数
 const sortAnnoByStartTime = (items) => {
@@ -384,7 +385,16 @@ const SpeechAnno = () => {
             />
           )}
         </div>
-
+        {audioData && !audioData.error && (
+          <LabelAnno
+                datasetName={datasetName}
+                audioId={audioData.audioId}
+                labelKey="audio_quality"
+                labelOptions={['多人说话', '环境噪声', '干净音频', '舍弃音频']}
+                username={username}
+          
+          />
+        )}
         {/* 标注表格区域 */}
         <div className="annotation-table-container">
           <div className="table-header">
