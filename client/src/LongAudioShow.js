@@ -4,7 +4,6 @@ import {
   Typography,
   CircularProgress,
 } from '@mui/material';
-import { ToggleButton, ToggleButtonGroup } from '@mui/material';
 import AudioList from './AudioList';
 import AudioWaveform from './AudioWaveform';
 import AnnoTable from './AnnoTable';
@@ -15,12 +14,7 @@ import { useLocation } from 'react-router-dom';
 import { API_HOST } from './utils/apiService';
 import { useUser } from './UserContext';
 import LabelAnno from './LabelAnno';
-
-const QC_STATUS = [
-  { value: 'verified', label: '质检通过', color: 'success' },
-  { value: 'rejected', label: '需重标', color: 'error' },
-  { value: 'discarded', label: '音频丢弃', color: 'warning' },
-];
+import CheckAnno from './CheckAnno';
 
 
 const LongAudioShow = () => {
@@ -42,14 +36,6 @@ const LongAudioShow = () => {
 
   // 新增：minPxPerSec 状态，默认30
   const [minPxPerSec, setMinPxPerSec] = useState(30);
-
-  // 新增：质检状态选中
-  const [qcStatus, setQcStatus] = useState('');
-
-  // 新增：质检状态操作反馈
-  const [qcLoading, setQcLoading] = useState(false);
-  const [qcError, setQcError] = useState('');
-  const [qcSuccess, setQcSuccess] = useState('');
 
   // 修正 columnParams：将第一个元素（列表）中的 textEdit 改为 text
   let fixedColumnParams = columnParams;
@@ -87,45 +73,10 @@ const LongAudioShow = () => {
     }
   }, [datasetName]);
 
-  // 质检状态按钮点击，调用接口并本地同步
-  const handleQcStatusChange = async (event, newStatus) => {
-    if (!newStatus || !audioData?.audioId || !datasetName || !username) 
-    {
-      console.log('缺少必要信息，无法更新质检状态');
-      if(!newStatus)console.log('newStatus:', newStatus);
-      if(!audioData?.audioId) console.log('audioData?.audioId:', audioData?.audioId);
-      if(!datasetName) console.log('datasetName:', datasetName);
-      if(!username) console.log('username:', username);
-      return;
-    }
-    setQcLoading(true);
-    setQcError('');
-    setQcSuccess('');
-    try {
-      await updateCheck(username, datasetName, audioData.audioId, newStatus);
-      setQcStatus(newStatus);
-      setQcSuccess('质检状态已更新');
-      // 本地同步 audioStates
-      setAudioStates(prev => ({
-        ...prev,
-        [audioData.audioId]: {
-          ...(prev[audioData.audioId] || {}),
-          check_status: newStatus
-        }
-      }));
-    } catch (e) {
-      setQcError('更新失败: ' + (e.message || '未知错误'));
-    } finally {
-      setQcLoading(false);
-      setTimeout(() => setQcSuccess(''), 2000);
-    }
-  };
-
   // 点击列表音频时，自动同步选中质检状态
   const handleSelectAudio = useCallback(async (audioId) => {
     if (!audioId) {
       setAudioData(null);
-      setQcStatus('');
       return;
     }
     setLoading(true);
@@ -142,7 +93,6 @@ const LongAudioShow = () => {
         annotationData: processedData,
         audioId
       });
-      setQcStatus(audioStates[audioId]?.check_status || '');
     } catch (error) {
       setAudioData({
         audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
@@ -150,7 +100,6 @@ const LongAudioShow = () => {
         audioId,
         error: error.message
       });
-      setQcStatus('');
     } finally {
       setLoading(false);
     }
@@ -238,55 +187,22 @@ const LongAudioShow = () => {
         {/* 质检状态选择区域（多选一按钮） */}
         {audioData && !audioData.error && (
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, my: 2 }}>
-            {/* 左侧：质检标注模块（样式与LabelAnno一致） */}
-            <Box sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              p: 2,
-              border: '1px solid #eee',
-              borderRadius: 2,
-              background: '#fafbfc',
-              mb: 2,
-              minWidth: 260,
-              maxWidth: 400,
-            }}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                质检标注
-              </Typography>
-              <ToggleButtonGroup
-                value={qcStatus}
-                exclusive
-                onChange={handleQcStatusChange}
-                size="small"
-                disabled={qcLoading}
-                sx={{ mb: 1 }}
-              >
-                {QC_STATUS.map(item => (
-                  <ToggleButton
-                    key={item.value}
-                    value={item.value}
-                    sx={{
-                      minWidth: 100,
-                      fontWeight: 500,
-                      color: qcStatus === item.value ? '#fff' : undefined,
-                      bgcolor: qcStatus === item.value ? 'success.main' : undefined,
-                      '&.Mui-selected': {
-                        color: '#fff',
-                        bgcolor: 'success.main',
-                      },
-                    }}
-                  >
-                    {item.label}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-              <Box sx={{ minHeight: 28, mt: 1 }}>
-                {qcLoading && <CircularProgress size={18} sx={{ mr: 2 }} />}
-                {qcError && <Typography color="error" sx={{ display: 'inline-block' }}>{qcError}</Typography>}
-                {qcSuccess && <Typography color="success.main" sx={{ display: 'inline-block' }}>{qcSuccess}</Typography>}
-              </Box>
-            </Box>
+            {/* 左侧：质检标注组件 */}
+            <CheckAnno
+              datasetName={datasetName}
+              audioId={audioData.audioId}
+              username={username}
+              currentStatus={audioStates[audioData.audioId]?.check_status || ''}
+              onStatusChange={(newStatus) => {
+                setAudioStates(prev => ({
+                  ...prev,
+                  [audioData.audioId]: {
+                    ...(prev[audioData.audioId] || {}),
+                    check_status: newStatus,
+                  },
+                }));
+              }}
+            />
             {/* 右侧：语音质量标注按钮 */}
             <LabelAnno
               datasetName={datasetName}

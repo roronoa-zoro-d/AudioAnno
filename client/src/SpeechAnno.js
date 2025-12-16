@@ -17,6 +17,7 @@ import { useLocation } from 'react-router-dom';
 import { useUser } from './UserContext';
 import { API_HOST } from './utils/apiService';
 import LabelAnno from './LabelAnno';
+import CheckAnno from './CheckAnno';
 
 // 纯排序函数
 const sortAnnoByStartTime = (items) => {
@@ -385,15 +386,32 @@ const SpeechAnno = () => {
             />
           )}
         </div>
+        
         {audioData && !audioData.error && (
-          <LabelAnno
-                datasetName={datasetName}
-                audioId={audioData.audioId}
-                labelKey="audio_quality"
-                labelOptions={['多人说话', '环境噪声', '干净音频', '舍弃音频']}
-                username={username}
-          
-          />
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, my: 2 }}>
+            <CheckAnno
+              datasetName={datasetName}
+              audioId={audioData.audioId}
+              username={username}
+              currentStatus={audioStates[audioData.audioId]?.check_status || ''}
+              onStatusChange={(newStatus) => {
+                setAudioStates(prev => ({
+                  ...prev,
+                  [audioData.audioId]: {
+                    ...(prev[audioData.audioId] || {}),
+                    check_status: newStatus,
+                  },
+                }));
+              }}
+            />
+            <LabelAnno
+              datasetName={datasetName}
+              audioId={audioData.audioId}
+              labelKey="audio_quality"
+              labelOptions={['多人说话', '环境噪声', '干净音频', '舍弃音频']}
+              username={username}
+            />
+          </Box>
         )}
         {/* 标注表格区域 */}
         <div className="annotation-table-container">
