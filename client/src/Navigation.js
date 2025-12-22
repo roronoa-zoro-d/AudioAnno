@@ -26,7 +26,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
       
       <nav className="nav-menu">
 
-         <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
+         {/* <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
           <div className="nav-title">语音标注</div>
           <div className="nav-subitems">
             <NavLink to="/speech-annotation/long" className="nav-item">
@@ -74,7 +74,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
-          
+           */}
 
         <div className={`nav-group ${isActivePath('/badcase') ? 'active' : ''}`}>
           <div className="nav-title">badcase分析</div>
