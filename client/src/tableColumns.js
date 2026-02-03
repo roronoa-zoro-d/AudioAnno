@@ -142,6 +142,83 @@ const textEditColumn = {
   )
 };
 
+const spkColumn = {
+  key: 'spk',
+  label: '说话人',
+  render: (item) => (
+    <Typography variant="body1">
+      {item.spk}
+    </Typography>
+  )
+};
+
+const spkvadtextColumn = {
+  key: 'spk',
+  label: '说话人',
+  render: (item, rowIndex, onTextChange, onPlayRangeAudio) => {
+    // item.spk 是一个列表的列表，每个子列表包含4项：[说话人，开始时间，结束时间，文本]
+    const spkDataList = Array.isArray(item.spk) ? item.spk : [];
+    
+    if (spkDataList.length === 0) {
+      return (
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          无数据
+        </Typography>
+      );
+    }
+    
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        p: 1,
+        gap: 1
+      }}>
+        {spkDataList.map((spkItem, index) => {
+          // 每个子列表包含4项：[说话人，开始时间，结束时间，文本]
+          const spkArray = Array.isArray(spkItem) ? spkItem : [];
+          const [speaker, startTime, endTime, text] = spkArray;
+          
+          return (
+            <Box 
+              key={index}
+              sx={{ 
+                display: 'flex', 
+                flexDirection: 'row',
+                alignItems: 'center',
+                p: 1,
+                backgroundColor: '#f5f5f5',
+                borderRadius: 1,
+                gap: 1.5,
+                width: '100%',
+                flexWrap: 'wrap'
+              }}
+              onClick={() => onPlayRangeAudio(startTime, endTime)}
+            >
+              {speaker && (
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                  {speaker}
+                </Typography>
+              )}
+              {startTime !== undefined && endTime !== undefined && (
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
+                  {formatTimeRange(startTime, endTime)}
+                </Typography>
+              )}
+              {text && (
+                <Typography variant="body2" sx={{ color: 'text.primary' }}>
+                  {text}
+                </Typography>
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
+}
+
 
 const optNoiseSpeakerColumn = {  // 修正变量名拼写错误
   key: 'voiceType',  // 建议使用更有意义的key
@@ -230,7 +307,8 @@ const getColumnsByParams = (params) => {
         'text': textColumn,
         'textEdit': textEditColumn,
         'optNoiseSpeaker': optNoiseSpeakerColumn,
-        'qualityCheck': qualityCheckColumn
+        'qualityCheck': qualityCheckColumn,
+        'spk': spkvadtextColumn,
     };
     const presetKeys = Object.keys(presetMap);
     if (Array.isArray(params) && params.length === 2) {

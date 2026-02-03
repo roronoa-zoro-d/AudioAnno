@@ -127,6 +127,13 @@ const LongAudioShow = () => {
     }
   }, []);
 
+  // 表格行点击：播放对应区域
+  const handlePlayRangeAudio = useCallback((st_ms, ed_ms) => {
+    if (audioWaveformRef.current) {
+      audioWaveformRef.current.playRegion(st_ms / 1000, ed_ms / 1000);
+    }
+  }, []);
+
 
 
 
@@ -225,6 +232,7 @@ const LongAudioShow = () => {
               columns={columns}
               activeRegionId={activeRegionId}
               onRowClick={handleTableRowClick}
+              onPlayRangeAudio={handlePlayRangeAudio} 
             />
           )}
         </div>

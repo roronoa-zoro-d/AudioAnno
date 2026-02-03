@@ -15,7 +15,8 @@ const AnnoTable = ({ data = [],
     columns = [],
     activeRegionId = null,
     onRowClick = () => {},
-    onCellChange = () => {} // 新增
+    onCellChange = () => {}, // 新增
+    onPlayRangeAudio = () => {}
  }) => {
 
 
@@ -60,7 +61,7 @@ const AnnoTable = ({ data = [],
                   <TableCell key={`${column.key}-${idx}`} 
                             onClick={colIdx === 0 ? () => onRowClick(item) : undefined}>
                     
-                    {column.render ? column.render(item, idx, onCellChange) : item[column.key]}
+                    {column.render ? column.render(item, idx, onCellChange, onPlayRangeAudio) : item[column.key]}
                   </TableCell>
                 ))}
               </TableRow>
