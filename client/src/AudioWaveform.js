@@ -155,6 +155,8 @@ const AudioWaveform = forwardRef(({
   }, []);
 
 
+
+
   // WaveSurfer 实例只初始化一次
   useEffect(() => {
     if (!waveformRef.current || !spectrogramRef.current) return;
@@ -183,6 +185,14 @@ const AudioWaveform = forwardRef(({
           labelBackground: '#555',
           labelColor: '#fff',
           labelSize: '11px',
+          // 自定义：分:秒.毫秒，如 0:01.234
+          formatTimeCallback: (seconds) => {
+            const totalMs = Math.round(seconds * 1000);
+            const m = Math.floor(totalMs / 60000);
+            const s = Math.floor((totalMs % 60000) / 1000);
+            const ms = totalMs % 1000;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+          },
         }),
         Spectrogram.create({
           container: spectrogramRef.current,

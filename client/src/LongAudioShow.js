@@ -162,7 +162,7 @@ const LongAudioShow = () => {
                   <input
                     type="range"
                     min={0}
-                    max={50}
+                    max={100}
                     step={10}
                     value={minPxPerSec}
                     onChange={e => setMinPxPerSec(Number(e.target.value))}
