@@ -16,6 +16,8 @@ import ShortAudioShow from './ShortAudioShow';
 import BadcaseUpload from './BadcaseUpload';
 import BadcaseAnalysis from './BadcaseAnalysis';
 import BadcaseOverview from './BadcaseOverview';
+import PersonalizedVad from './PersonalizedVad';
+import BackgroundVoiceFilter from './BackgroundVoiceFilter';
 
 function App() {
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -40,6 +42,8 @@ function App() {
                 <Route path="/badcase/analysis" element={<BadcaseAnalysis />} />
                 <Route path="/badcase/analysis/:audioName" element={<BadcaseAnalysis />} />
                 <Route path="/badcase/overview" element={<BadcaseOverview />} />
+                <Route path="/speech-recognition/personalized-vad" element={<PersonalizedVad />} />
+                <Route path="/speech-recognition/background-voice-filter" element={<BackgroundVoiceFilter />} />
               </Routes>
             </div>
           </div>

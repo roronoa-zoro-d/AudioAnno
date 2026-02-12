@@ -93,6 +93,20 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
+
+        <div className={`nav-group ${isActivePath('/speech-recognition') ? 'active' : ''}`}>
+          <div className="nav-title">语音识别服务</div>
+          <div className="nav-subitems">
+            <NavLink to="/speech-recognition/personalized-vad" className="nav-item">
+              <span className="icon">🎯</span>
+              {!collapsed && <span>个性化vad</span>}
+            </NavLink>
+            <NavLink to="/speech-recognition/background-voice-filter" className="nav-item">
+              <span className="icon">🔇</span>
+              {!collapsed && <span>背景人声过滤</span>}
+            </NavLink>
+          </div>
+        </div>
       </nav>
     </div>
   );

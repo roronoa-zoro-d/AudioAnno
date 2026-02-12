@@ -303,3 +303,89 @@ export async function update_badcase_table(utt, key_name, key_val) {
     return { ok: false, error: err.message || 'update error' };
   }
 }
+
+// WebSocket 流式 ASR 相关函数
+
+/**
+ * 创建流式ASR WebSocket连接
+ * @param {string} wsUrl - WebSocket连接URL，由调用者定义
+ * @param {Object} startMessage - 开始消息对象，将直接序列化为JSON发送
+ * @param {Function} onMessage - 接收服务端消息的回调函数 (data) => {}
+ * @param {Function} onError - 错误处理回调函数 (error) => {}
+ * @param {Function} onClose - 连接关闭回调函数 () => {}
+ * @returns {WebSocket} WebSocket实例
+ */
+export const createAsrWebSocket = (wsUrl, startMessage, onMessage, onError, onClose) => {
+  const ws = new WebSocket(wsUrl);
+  
+  ws.onopen = () => {
+    // 连接建立后，直接序列化 startMessage 并发送
+    if (startMessage) {
+      ws.send(JSON.stringify(startMessage));
+    }
+  };
+  
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      onMessage?.(data);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('解析ASR消息失败:', err);
+    }
+  };
+  
+  ws.onerror = (error) => {
+    // eslint-disable-next-line no-console
+    console.error('ASR WebSocket错误:', error);
+    onError?.(error);
+  };
+  
+  ws.onclose = () => {
+    onClose?.();
+  };
+  
+  return ws;
+};
+
+/**
+ * 发送二进制数据到WebSocket
+ * @param {WebSocket} ws - WebSocket连接
+ * @param {ArrayBuffer|Int16Array|Uint8Array} binaryData - 二进制数据
+ */
+export const sendBinary = (ws, binaryData) => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    // 如果是 TypedArray，需要确保字节序正确
+    let buffer;
+    if (binaryData instanceof ArrayBuffer) {
+      buffer = binaryData;
+    } else if (binaryData instanceof Int16Array) {
+      // Int16Array 需要确保使用正确的字节序（little-endian）
+      // 直接使用 buffer 即可，因为 JavaScript 的 TypedArray 默认就是 little-endian
+      buffer = binaryData.buffer;
+    } else {
+      // 其他 TypedArray 也直接使用 buffer
+      buffer = binaryData.buffer;
+    }
+    
+    // 发送 ArrayBuffer
+    ws.send(buffer);
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn('WebSocket未连接，无法发送二进制数据');
+  }
+};
+
+/**
+ * 发送文本消息到WebSocket（直接序列化后发送）
+ * @param {WebSocket} ws - WebSocket连接
+ * @param {Object} textMessage - 文本消息对象，将直接序列化为JSON发送
+ */
+export const sendText = (ws, textMessage) => {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(textMessage));
+  } else {
+    // eslint-disable-next-line no-console
+    console.warn('WebSocket未连接，无法发送文本消息');
+  }
+};
