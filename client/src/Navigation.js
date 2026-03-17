@@ -25,8 +25,8 @@ const Navigation = ({ collapsed, setCollapsed }) => {
       </div>
       
       <nav className="nav-menu">
-
-         <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
+        {/* 以下菜单暂时注释，给同事演示时只展示个性化vad，需要时取消注释即可 */}
+        {/* <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
           <div className="nav-title">语音标注</div>
           <div className="nav-subitems">
             <NavLink to="/speech-annotation/long" className="nav-item">
@@ -53,7 +53,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
-        
+
         <div className={`nav-group ${isActivePath('/speech-analysis') ? 'active' : ''}`}>
           <div className="nav-title">语音分析</div>
           <div className="nav-subitems">
@@ -64,7 +64,6 @@ const Navigation = ({ collapsed, setCollapsed }) => {
           </div>
         </div>
 
-        
         <div className={`nav-group ${isActivePath('/datasetManager') ? 'active' : ''}`}>
           <div className="nav-title">数据集管理</div>
           <div className="nav-subitems">
@@ -74,7 +73,6 @@ const Navigation = ({ collapsed, setCollapsed }) => {
             </NavLink>
           </div>
         </div>
-           
 
         <div className={`nav-group ${isActivePath('/badcase') ? 'active' : ''}`}>
           <div className="nav-title">badcase分析</div>
@@ -92,7 +90,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
               {!collapsed && <span>badcase数据总览</span>}
             </NavLink>
           </div>
-        </div>
+        </div> */}
 
         <div className={`nav-group ${isActivePath('/speech-recognition') ? 'active' : ''}`}>
           <div className="nav-title">语音识别服务</div>
@@ -101,10 +99,10 @@ const Navigation = ({ collapsed, setCollapsed }) => {
               <span className="icon">🎯</span>
               {!collapsed && <span>个性化vad</span>}
             </NavLink>
-            <NavLink to="/speech-recognition/background-voice-filter" className="nav-item">
+            {/* <NavLink to="/speech-recognition/background-voice-filter" className="nav-item">
               <span className="icon">🔇</span>
               {!collapsed && <span>背景人声过滤</span>}
-            </NavLink>
+            </NavLink> */}
           </div>
         </div>
       </nav>

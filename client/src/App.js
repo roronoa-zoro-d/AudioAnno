@@ -1,6 +1,6 @@
 // App.js
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navigation from './Navigation';
 import SpeechAnno from './SpeechAnno';
 import Dataset from './Dataset';
@@ -30,7 +30,8 @@ function App() {
             <Navigation collapsed={navCollapsed} setCollapsed={setNavCollapsed} />
             <div className={`main-content ${navCollapsed ? 'collapsed' : ''}`}>
               <Routes>
-                <Route path="/" element={<Auth />} />
+                <Route path="/" element={<Navigate to="/speech-recognition/personalized-vad" replace />} />
+                <Route path="/auth" element={<Auth />} />
                 <Route path="/speech-annotation/long" element={<SpeechAnno />} />
                 <Route path="/speech-annotation/short" element={<ShortAudioAnnotation />} />
                 <Route path="/speech-analysis/wer" element={<WERAnalysis />} />
