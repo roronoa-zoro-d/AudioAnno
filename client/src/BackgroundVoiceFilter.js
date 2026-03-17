@@ -54,7 +54,7 @@ const BackgroundVoiceFilter = () => {
   const [status, setStatus] = useState('未开始录制');
   const [recordedInfo, setRecordedInfo] = useState(null); // { samples: Int16Array, sampleRate: 16000 }
   const [playbackUrl, setPlaybackUrl] = useState(null);
-  const [asrResult, setAsrResult] = useState(null); // 存储ASR识别结果
+  const [asrMessages, setAsrMessages] = useState([]); // 存储所有服务端返回的消息（类似终端日志，不覆盖）
 
   const recordedFramesRef = useRef([]); // 收集每一帧 Int16 PCM（16k）
   const audioRef = useRef(null);
@@ -75,81 +75,37 @@ const BackgroundVoiceFilter = () => {
     }
   }, []);
 
-  // 处理ASR服务返回的消息（异步处理，通过setState更新UI）
+  // 处理ASR服务返回的消息：追加到列表，不覆盖（类似终端打印）
   const handleAsrMessage = useCallback((data) => {
     // eslint-disable-next-line no-console
-    console.log('========== 处理ASR消息 ==========');
-    // eslint-disable-next-line no-console
-    console.log('完整消息对象:', JSON.stringify(data, null, 2));
-    // eslint-disable-next-line no-console
-    console.log('消息类型:', typeof data);
-    // eslint-disable-next-line no-console
-    console.log('消息键:', Object.keys(data));
-    
-    // 检测是否为最终消息（根据服务端返回的特殊字段判断）
-    // 可能的字段：is_final, type === 'final', status === 'completed' 等
-    const isFinalMessage = data.is_final === true 
-      || data.type === 'final' 
+    console.log('========== 处理ASR消息 ==========', data);
+
+    const isFinalMessage = data.is_final === true
+      || data.type === 'final'
       || data.status === 'completed'
       || data.action === 'end'
       || (data.final !== undefined && data.final === true);
-    
-    // eslint-disable-next-line no-console
-    console.log('是否为最终消息:', isFinalMessage);
-    
-    // 根据服务端返回的数据结构处理
-    if (data.type === 'partial') {
-      // 中间识别结果（流式返回）
-      const partialText = data.text || data.result || data.partial_text || '';
-      // eslint-disable-next-line no-console
-      console.log('更新中间结果:', partialText);
-      setAsrResult(prev => ({
-        ...prev,
-        partial: partialText
-      }));
-    } else if (data.type === 'final' || isFinalMessage) {
-      // 最终识别结果
-      const finalText = data.text || data.result || data.final_text || '';
-      // eslint-disable-next-line no-console
-      console.log('更新最终结果:', finalText);
-      setAsrResult(prev => ({
-        ...prev,
-        final: finalText,
-        partial: null
-      }));
-      
-      // 收到最终消息后，关闭WebSocket连接
-      if (isFinalMessage) {
-        // eslint-disable-next-line no-console
-        console.log('收到最终消息，准备关闭WebSocket连接');
-        closeWebSocket();
-      }
-    } else if (data.text || data.result) {
-      // 兼容其他格式（没有type字段，但有text或result字段）
-      const text = data.text || data.result || '';
-      // eslint-disable-next-line no-console
-      console.log('更新文本结果（兼容格式）:', text);
-      setAsrResult(prev => ({
-        ...prev,
-        final: text
-      }));
-      
-      // 如果消息中包含最终标记，也关闭连接
-      if (isFinalMessage) {
-        closeWebSocket();
-      }
-    } else {
-      // 如果都不匹配，至少打印出来看看
-      // eslint-disable-next-line no-console
-      console.warn('未识别的消息格式，无法提取文本:', data);
-      // 尝试更新状态，即使格式不标准
-      setAsrResult(prev => ({
-        ...prev,
-        final: JSON.stringify(data) // 至少显示原始数据
-      }));
+
+    const text = data.text ?? data.result ?? data.partial_text ?? data.final_text ?? '';
+    const displayText = typeof text === 'string' ? text : JSON.stringify(text);
+    const typeLabel = data.type || (isFinalMessage ? 'final' : 'message');
+
+    // 追加一条消息到列表（不覆盖之前的）
+    setAsrMessages(prev => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+        type: typeLabel,
+        text: displayText,
+        isFinal: isFinalMessage,
+        raw: data,
+      },
+    ]);
+
+    if (isFinalMessage) {
+      closeWebSocket();
     }
-    // eslint-disable-next-line no-console
-    console.log('================================');
   }, [closeWebSocket]);
 
   const handleAsrError = useCallback((error) => {
@@ -174,7 +130,7 @@ const BackgroundVoiceFilter = () => {
     wsRef.current = null;
   }, [isRecording]);
 
-  // 采集到一帧 16k Int16 PCM 的回调
+  // 录音组件采集到一帧音频的回调函数  16k Int16 PCM 的回调
   const handleFrame = useCallback((frame) => {
     // 1. 继续缓存到本地（用于回放）
     recordedFramesRef.current.push(frame);
@@ -193,7 +149,7 @@ const BackgroundVoiceFilter = () => {
   const handleStartRecording = () => {
     recordedFramesRef.current = [];
     setRecordedInfo(null);
-    setAsrResult(null);
+    setAsrMessages([]); // 开始新一次录制时清空消息日志
     // 重置发送统计
     sentFramesStatsRef.current = { count: 0, totalSamples: 0, totalBytes: 0 };
     setStatus('正在连接ASR服务...');
@@ -462,22 +418,43 @@ const BackgroundVoiceFilter = () => {
           当前状态：{status}
         </div>
 
-        {/* 显示ASR识别结果 */}
-        {asrResult && (
-          <div style={{ marginTop: '16px', padding: '12px', background: '#f0f0f0', borderRadius: '4px' }}>
-            <div style={{ fontWeight: 500, marginBottom: '8px' }}>ASR识别结果：</div>
-            {asrResult.partial && (
-              <div style={{ color: '#666', fontStyle: 'italic' }}>
-                识别中: {asrResult.partial}
-              </div>
-            )}
-            {asrResult.final && (
-              <div style={{ color: '#333', fontWeight: 500 }}>
-                最终结果: {asrResult.final}
-              </div>
+        {/* 服务端返回消息日志（类似终端，全部展示，可滚动） */}
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ fontWeight: 500, marginBottom: '8px' }}>服务端消息日志：</div>
+          <div
+            style={{
+              padding: '12px',
+              background: '#1e1e1e',
+              borderRadius: '4px',
+              maxHeight: '200px',
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '13px',
+              color: '#d4d4d4',
+              lineHeight: 1.5,
+            }}
+          >
+            {asrMessages.length === 0 ? (
+              <div style={{ color: '#888' }}>暂无消息，开始录制并说话后将在此显示服务端返回的所有消息。</div>
+            ) : (
+              asrMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  style={{
+                    marginBottom: '4px',
+                    wordBreak: 'break-all',
+                    borderLeft: `3px solid ${msg.isFinal ? '#4caf50' : '#2196f3'}`,
+                    paddingLeft: '8px',
+                  }}
+                >
+                  <span style={{ color: '#858585', marginRight: '8px' }}>[{msg.time}]</span>
+                  <span style={{ color: '#9cdcfe', marginRight: '8px' }}>{msg.type}</span>
+                  {msg.text ? <span>{msg.text}</span> : <span style={{ color: '#888' }}>{JSON.stringify(msg.raw)}</span>}
+                </div>
+              ))
             )}
           </div>
-        )}
+        </div>
 
         {recordedInfo && (
           <>

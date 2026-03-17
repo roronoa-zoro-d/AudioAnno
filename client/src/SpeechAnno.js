@@ -109,6 +109,14 @@ const SpeechAnno = () => {
 
     try {
       const [annotationData] = await Promise.all([fetchAnnotation(datasetName, audioId)]);
+      // 在控制台打印第一个标注项，方便调试查看结构
+      if (Array.isArray(annotationData) && annotationData.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log('annotationData[0]:', annotationData);
+      }
+      else {
+        console.log('annotationData is empty');
+      }
 
       const processedData = annotationData.map(item => ({
         ...item,

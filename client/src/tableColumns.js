@@ -115,6 +115,17 @@ const textColumn = {
   )
 };
 
+// info 列：渲染方式与 text 相同，但读取 item.info 字段
+const infoColumn = {
+  key: 'info',
+  label: '信息',
+  render: (item) => (
+    <Typography variant="body1">
+      {item.info}
+    </Typography>
+  )
+};
+
 const textEditColumn = {
   key: 'text',
   label: '文本',
@@ -305,6 +316,7 @@ const getColumnsByParams = (params) => {
         'index': indexColumn,
         'timeRange': segmentColumn,
         'text': textColumn,
+        'info': infoColumn,
         'textEdit': textEditColumn,
         'optNoiseSpeaker': optNoiseSpeakerColumn,
         'qualityCheck': qualityCheckColumn,
