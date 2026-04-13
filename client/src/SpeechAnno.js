@@ -160,6 +160,13 @@ const SpeechAnno = () => {
       });
       setHasChanges(false); // 重置修改状态
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[SpeechAnno] handleSelectAudio failed', {
+        datasetName,
+        audioId,
+        message: error?.message,
+        stack: error?.stack,
+      });
       setAudioData({
         audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
         seg_datas: [],
