@@ -103,7 +103,7 @@ const PersonalizedVad = () => {
       || data.is_target === 1
       || data.is_target === 'true';
 
-    const text = data.text ?? data.result ?? data.partial_text ?? data.final_text ?? '';
+    const text = data.text ?? data.data?.text ?? data.result ?? data.partial_text ?? data.final_text ?? '';
     const displayText = typeof text === 'string' ? text : JSON.stringify(text);
     const typeLabel = data.type || (isFinalMessage ? 'final' : 'message');
     
@@ -587,6 +587,42 @@ const PersonalizedVad = () => {
 
         <div style={{ marginTop: '12px', fontSize: '14px', color: '#333' }}>
           当前状态：{status}
+        </div>
+
+        {/* 仅展示 type=asr_result 且 is_target=true 的消息，组件始终存在 */}
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ fontWeight: 500, marginBottom: '8px', color: '#2e7d32' }}>
+            目标说话人识别结果（is_target=true）：
+          </div>
+          <div
+            style={{
+              padding: '12px',
+              background: '#1e1e1e',
+              borderRadius: '4px',
+              maxHeight: '120px',
+              overflowY: 'auto',
+              fontFamily: 'monospace',
+              fontSize: '13px',
+              color: '#4caf50',
+              lineHeight: 1.5,
+              borderLeft: '3px solid #4caf50',
+            }}
+          >
+            {asrMessages
+              .filter((m) => m.type === 'asr_result' && m.isTarget === true)
+              .map((msg) => {
+                const sim = msg.raw?.sim ?? msg.raw?.similarity;
+                const simStr = typeof sim === 'number' ? sim.toFixed(2) : '--';
+                const text = msg.raw?.data?.text ?? msg.text ?? '';
+                return (
+                  <div key={msg.id} style={{ marginBottom: '4px', wordBreak: 'break-all' }}>
+                    <span style={{ color: '#858585', marginRight: '8px' }}>{msg.time}</span>
+                    <span style={{ color: '#9cdcfe', marginRight: '12px' }}>{simStr}</span>
+                    <span style={{ color: '#4caf50' }}>{text}</span>
+                  </div>
+                );
+              })}
+          </div>
         </div>
 
         {/* 服务端返回消息日志（类似终端，全部展示，可滚动） */}
