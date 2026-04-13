@@ -5,13 +5,14 @@ import {
   CircularProgress,
   Button,
   Snackbar,
-  Alert
+  Alert,
+  TextField
 } from '@mui/material';
 import AudioList from './AudioList';
 import AudioWaveform from './AudioWaveform';
 import AnnoTable from './AnnoTable';
 import { fetchAnnotation, updateAnnotation} from './utils/apiService';
-import { getColumnsByParams } from './tableColumns';
+import { getColumnsByParams, parseAudioLabelConfigs } from './tableColumns';
 import './SpeechAnno.css';
 import { useLocation } from 'react-router-dom';
 import { useUser } from './UserContext';
@@ -22,6 +23,20 @@ import CheckAnno from './CheckAnno';
 // 纯排序函数
 const sortAnnoByStartTime = (items) => {
   return [...items].sort((a, b) => a.seg[0] - b.seg[0]);
+};
+
+/** 将服务端 asr_online_text 转为只读展示用字符串（字符串原样；对象则 JSON 格式化） */
+const formatAsrOnlineTextForDisplay = (v) => {
+  if (v == null || v === '') return '';
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') {
+    try {
+      return JSON.stringify(v, null, 2);
+    } catch {
+      return String(v);
+    }
+  }
+  return String(v);
 };
 
 const SpeechAnno = () => {
@@ -64,8 +79,14 @@ const SpeechAnno = () => {
     activeRegionId
   };
 
-  // 获取表格列配置
+  // 获取表格列配置（第三段为整句标签，仅用于 parseAudioLabelConfigs，表格忽略）
   const columns = getColumnsByParams(columnParams);
+  const audioLabelConfigs = parseAudioLabelConfigs(columnParams);
+
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('columnParams:', columnParams);
+  }, [columnParams]);
 
   //服务器获取数据1.  获取音频列表和音频状态
   useEffect(() => {
@@ -108,17 +129,20 @@ const SpeechAnno = () => {
     setLoading(true);
 
     try {
-      const [annotationData] = await Promise.all([fetchAnnotation(datasetName, audioId)]);
+      const payload = await fetchAnnotation(datasetName, audioId);
+      // 临时兼容旧接口 anno；服务重启后可只保留 seg_datas
+      const rawSegList = payload?.seg_datas ?? payload?.anno;
+      const seg_datas = Array.isArray(rawSegList) ? rawSegList : [];
       // 在控制台打印第一个标注项，方便调试查看结构
-      if (Array.isArray(annotationData) && annotationData.length > 0) {
+      if (seg_datas.length > 0) {
         // eslint-disable-next-line no-console
-        console.log('annotationData[0]:', annotationData);
+        console.log('seg_datas[0]:', seg_datas[0]);
       }
       else {
-        console.log('annotationData is empty');
+        console.log('seg_datas is empty');
       }
 
-      const processedData = annotationData.map(item => ({
+      const processedData = seg_datas.map(item => ({
         ...item,
         id: item.id || `external-anno-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
         start: item.seg[0] / 1000,
@@ -130,14 +154,15 @@ const SpeechAnno = () => {
 
       setAudioData({
         audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
-        annotationData: processedData,
-        audioId
+        seg_datas: processedData,
+        audioId,
+        asr_online_text: payload.asr_online_text,
       });
       setHasChanges(false); // 重置修改状态
     } catch (error) {
       setAudioData({
         audioUrl: `${API_HOST}/api/audio/${datasetName}/${audioId}`,
-        annotationData: [],
+        seg_datas: [],
         audioId,
         error: error.message
       });
@@ -149,10 +174,10 @@ const SpeechAnno = () => {
 
   // 检测标注变化，变化时激活提交按钮
   useEffect(() => {
-    if (!audioData || !audioData.annotationData) return;
+    if (!audioData || !audioData.seg_datas) return;
 
     // 比较当前标注与初始标注
-    const currentAnnotations = JSON.stringify(audioData.annotationData);
+    const currentAnnotations = JSON.stringify(audioData.seg_datas);
     const initialAnnotations = JSON.stringify(initialAnnotationsRef.current);
 
     setHasChanges(currentAnnotations !== initialAnnotations);
@@ -164,10 +189,10 @@ const SpeechAnno = () => {
     console.log('[SpeechAnno] 回调函数handleAudioReady: 音频加载完成');
     const { audioData } = stateRef.current;
 
-    if (audioWaveformRef.current && audioData?.annotationData) {
-      console.log(`[SpeechAnno] 初始化 ${audioData.annotationData.length} 个区域`);
+    if (audioWaveformRef.current && audioData?.seg_datas) {
+      console.log(`[SpeechAnno] 初始化 ${audioData.seg_datas.length} 个区域`);
 
-      audioData.annotationData.forEach((item, index) => {
+      audioData.seg_datas.forEach((item, index) => {
         audioWaveformRef.current.createRegion(
           item.start || item.seg[0] / 1000,
           item.end || item.seg[1] / 1000,
@@ -199,13 +224,13 @@ const SpeechAnno = () => {
       if (!prev) return prev; // 确保prev存在
 
       const updatedAnnotations = sortAnnoByStartTime([
-        ...prev.annotationData,
+        ...prev.seg_datas,
         newAnnotation
       ]);
 
       return {
         ...prev,
-        annotationData: updatedAnnotations
+        seg_datas: updatedAnnotations
       };
     });
   }, []);
@@ -218,13 +243,13 @@ const SpeechAnno = () => {
       if (!prev) return prev; // 确保prev存在
 
       // 过滤掉被删除的区域
-      const updatedAnnotations = prev.annotationData.filter(
+      const updatedAnnotations = prev.seg_datas.filter(
         annotation => annotation.id !== regionId
       );
 
       return {
         ...prev,
-        annotationData: updatedAnnotations
+        seg_datas: updatedAnnotations
       };
     });
   }, []);
@@ -237,7 +262,7 @@ const SpeechAnno = () => {
       if (!prev) return prev; // 确保prev存在
 
       // 更新对应区域的时间范围
-      const updatedAnnotations = prev.annotationData.map(annotation => {
+      const updatedAnnotations = prev.seg_datas.map(annotation => {
         if (annotation.id === region.id) {
           return {
             ...annotation,
@@ -251,7 +276,7 @@ const SpeechAnno = () => {
 
       return {
         ...prev,
-        annotationData: sortAnnoByStartTime(updatedAnnotations)
+        seg_datas: sortAnnoByStartTime(updatedAnnotations)
       };
     });
   }, []);
@@ -265,12 +290,12 @@ const SpeechAnno = () => {
     }
   }, []);
 
-  // 表格回调函数2 表格单元格变化时， 更新标注结果
+  // 表格回调函数2 表格单元格变化时， 更新标注结果seg_datas
   const handleCellChange = useCallback((rowIndex, key, newValue) => {
     console.log("表格内容发送变化 key=", key, " row=", rowIndex, " ", newValue);
     setAudioData(prev => {
       // 1. 创建新的标注数据数组（浅拷贝）
-      const newAnnotations = [...prev.annotationData];
+      const newAnnotations = [...prev.seg_datas];
 
       // 2. 创建新的行对象（浅拷贝+更新）
       newAnnotations[rowIndex] = {
@@ -281,13 +306,13 @@ const SpeechAnno = () => {
       // 3. 返回新的状态对象
       return {
         ...prev,            // 复制原状态的所有属性
-        annotationData: newAnnotations // 更新annotationData属性
+        seg_datas: newAnnotations // 更新 seg_datas
       };
     });
   }, []);
 
 
-  // 上传标注结果
+  // 上传标注结果seg_datas
   const handleUploadAnnotations = useCallback(async () => {
     if (!audioData) return;
 
@@ -300,13 +325,13 @@ const SpeechAnno = () => {
         username,
         datasetName,
         audioData.audioId,
-        audioData.annotationData
+        audioData.seg_datas
       );
       console.log('上传标注结果返回:', result);
       
       if (result.status === 'success' || result.status === true) {
         // 更新初始标注数据
-        initialAnnotationsRef.current = JSON.parse(JSON.stringify(audioData.annotationData));
+        initialAnnotationsRef.current = JSON.parse(JSON.stringify(audioData.seg_datas));
         if (result.anno_state) {
           updateAudioState(audioData.audioId, result.anno_state);
         }
@@ -335,7 +360,9 @@ const SpeechAnno = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-
+  const asrOnlineDisplay = audioData
+    ? formatAsrOnlineTextForDisplay(audioData.asr_online_text)
+    : '';
 
   return (
     <div className="app-container">
@@ -396,7 +423,7 @@ const SpeechAnno = () => {
         </div>
         
         {audioData && !audioData.error && (
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, my: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, my: 2, flexWrap: 'wrap' }}>
             <CheckAnno
               datasetName={datasetName}
               audioId={audioData.audioId}
@@ -419,17 +446,61 @@ const SpeechAnno = () => {
                 });
               }}
             />
-            <LabelAnno
-              datasetName={datasetName}
-              audioId={audioData.audioId}
-              labelKey="audio_quality"
-              labelOptions={['多人说话', '环境噪声', '干净音频', '舍弃音频']}
-              username={username}
-            />
+            {audioLabelConfigs.map((cfg) => (
+              <LabelAnno
+                key={cfg.labelKey}
+                datasetName={datasetName}
+                audioId={audioData.audioId}
+                labelKey={cfg.labelKey}
+                labelTitle={cfg.labelTitle}
+                labelOptions={cfg.labelOptions}
+                username={username}
+              />
+            ))}
           </Box>
         )}
         {/* 标注表格区域 */}
         <div className="annotation-table-container">
+          {audioData && !loading && !audioData.error && (
+            <Box
+              sx={{
+                mb: 2,
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'stretch', sm: 'flex-start' },
+                gap: 1.5,
+              }}
+            >
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  pt: { sm: 1 },
+                  minWidth: { sm: 88 },
+                  flexShrink: 0,
+                }}
+              >
+                线上结果
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                minRows={2}
+                maxRows={12}
+                value={asrOnlineDisplay}
+                placeholder="（无线上结果）"
+                InputProps={{ readOnly: true }}
+                variant="outlined"
+                size="small"
+                sx={{
+                  flex: 1,
+                  '& .MuiInputBase-input': {
+                    cursor: 'default',
+                  },
+                }}
+              />
+            </Box>
+          )}
           <div className="table-header">
             <div className="table-title">标注结果</div>
             {audioData && !audioData.error && (
@@ -453,7 +524,7 @@ const SpeechAnno = () => {
           </div>
           {audioData && !loading && !audioData.error && (
             <AnnoTable
-              data={audioData.annotationData}
+              data={audioData.seg_datas}
               columns={columns}
               activeRegionId={activeRegionId}
               onRowClick={handleTableRowClick}

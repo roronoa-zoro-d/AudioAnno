@@ -4,8 +4,8 @@
  * 一个音频的多个标注结果 [{name: asr, anno: anno}, {name: ref, anno: anno}]
  */
 // export const API_HOST = process.env.REACT_APP_API_HOST || 'http://localhost:9801';
-// export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9801';
-export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.131.12.157:9900';
+export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.130.253.103:9801';
+// export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.131.12.157:9900';
 
 
 /**
@@ -14,15 +14,18 @@ export const API_HOST = process.env.REACT_APP_API_HOST || 'http://10.131.12.157:
  * @returns {Promise<Array>} - 返回标注结果数组 
  * {anno: [{seg:[], text:"你好"}, {}]}
  */
+/**
+ * 拉取某条 utterance 的标注相关数据（原样返回服务端 JSON）。
+ * 典型形态：{ seg_datas, asr_online_text } 等，由调用方自行取用字段。
+ */
 export const fetchAnnotation = async (datasetName, utt) => {
   try {
-    // const utt = audioUrl.split('/').pop();
     const response = await fetch(`${API_HOST}/api/anno/${datasetName}/${utt}`);
     const data = await response.json();
-    return data.anno;
+    return data;
   } catch (error) {
     console.error('Failed to fetch annotations:', error);
-    return [];
+    return {};
   }
 };
 

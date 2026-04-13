@@ -8,6 +8,8 @@ const LabelAnno = ({
   datasetName,
   audioId,
   labelKey,
+  /** 区块标题（一般为中文）；为空或未传时显示「标注标签」 */
+  labelTitle,
   labelOptions = [],
   username,
 }) => {
@@ -67,7 +69,7 @@ const LabelAnno = ({
       maxWidth: 400,
     }}>
       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-        标签标注（{labelKey}）
+        {labelTitle != null && String(labelTitle).trim() !== '' ? String(labelTitle).trim() : '标注标签'}
       </Typography>
       {loading ? (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

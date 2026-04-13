@@ -81,7 +81,10 @@ const LongAudioShow = () => {
     }
     setLoading(true);
     try {
-      const [annotationData] = await Promise.all([fetchAnnotation(datasetName, audioId)]);
+      const payload = await fetchAnnotation(datasetName, audioId);
+      // 临时兼容旧接口 anno
+      const rawSegList = payload?.seg_datas ?? payload?.anno;
+      const annotationData = Array.isArray(rawSegList) ? rawSegList : [];
       const processedData = annotationData.map(item => ({
         ...item,
         id: item.id || `external-anno-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,

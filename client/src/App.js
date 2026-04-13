@@ -30,7 +30,7 @@ function App() {
             <Navigation collapsed={navCollapsed} setCollapsed={setNavCollapsed} />
             <div className={`main-content ${navCollapsed ? 'collapsed' : ''}`}>
               <Routes>
-                <Route path="/" element={<Navigate to="/speech-recognition/personalized-vad" replace />} />
+                <Route path="/" element={<Navigate to="/auth" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/speech-annotation/long" element={<SpeechAnno />} />
                 <Route path="/speech-annotation/short" element={<ShortAudioAnnotation />} />

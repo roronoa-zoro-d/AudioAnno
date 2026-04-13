@@ -26,7 +26,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
       
       <nav className="nav-menu">
         {/* 以下菜单暂时注释，给同事演示时只展示个性化vad，需要时取消注释即可 */}
-        {/* <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
+        <div className={`nav-group ${isActivePath('/speech-annotation') ? 'active' : ''}`}>
           <div className="nav-title">语音标注</div>
           <div className="nav-subitems">
             <NavLink to="/speech-annotation/long" className="nav-item">
@@ -90,7 +90,7 @@ const Navigation = ({ collapsed, setCollapsed }) => {
               {!collapsed && <span>badcase数据总览</span>}
             </NavLink>
           </div>
-        </div> */}
+        </div>
 
         <div className={`nav-group ${isActivePath('/speech-recognition') ? 'active' : ''}`}>
           <div className="nav-title">语音识别服务</div>

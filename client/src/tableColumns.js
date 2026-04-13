@@ -323,7 +323,7 @@ const getColumnsByParams = (params) => {
         'spk': spkvadtextColumn,
     };
     const presetKeys = Object.keys(presetMap);
-    if (Array.isArray(params) && params.length === 2) {
+    if (Array.isArray(params) && params.length >= 2) {
         const baseCols = params[0];
         const radioCols = params[1];
         // 处理基础列
@@ -347,7 +347,41 @@ const getColumnsByParams = (params) => {
     return columns;
 }
 
+/** columnParams 为三段时第三段为整句标签；与分段单选同形 [enKey, zhTitle, options] */
+const DEFAULT_AUDIO_LABEL_CONFIGS = [
+    { labelKey: 'audio_quality', labelTitle: '音频质量', labelOptions: ['多人说话', '环境噪声', '干净音频', '舍弃音频'] },
+];
 
-export { getColumnsByType, getColumnsByParams };
+/**
+ * 解析整段音频的标签标注列表（columnParams 第三项）。
+ * 仅当长度为 3 时解析第三项；否则返回默认（与原 LabelAnno 写死参数一致）。
+ */
+const parseAudioLabelConfigs = (columnParams) => {
+    if (!Array.isArray(columnParams) || columnParams.length !== 3) {
+        return DEFAULT_AUDIO_LABEL_CONFIGS;
+    }
+    const third = columnParams[2];
+    if (!Array.isArray(third) || third.length === 0) {
+        return DEFAULT_AUDIO_LABEL_CONFIGS;
+    }
+    const out = [];
+    third.forEach((row) => {
+        if (!Array.isArray(row) || row.length < 3) return;
+        const [key, title, optionsRaw] = row;
+        let options = [];
+        if (Array.isArray(optionsRaw)) {
+            options = optionsRaw.map((o) => String(o).trim()).filter(Boolean);
+        } else if (typeof optionsRaw === 'string') {
+            options = optionsRaw.split(/\s+/).map((s) => s.trim()).filter(Boolean);
+        }
+        if (key && title && options.length > 0) {
+            out.push({ labelKey: key, labelTitle: title, labelOptions: options });
+        }
+    });
+    return out.length > 0 ? out : DEFAULT_AUDIO_LABEL_CONFIGS;
+};
+
+
+export { getColumnsByType, getColumnsByParams, parseAudioLabelConfigs };
 // export { indexColumn, segmentColumn, textColumn, textEditColumn, qualityCheckColumn, optNoiseSpeakerColumn, createRadioColumn };
 

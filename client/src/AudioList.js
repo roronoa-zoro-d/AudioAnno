@@ -34,8 +34,8 @@ const AudioList = ({
   onSelectAudio // 音频选择回调函数
 }) => {
   const [currentSelected, setCurrentSelected] = useState(null);
-
-
+  /** false：列表显示全部；true：仅显示 anno_status（或当前 status_key）为 unlabeled 的音频 */
+  const [showUnlabeledOnly, setShowUnlabeledOnly] = useState(false);
 
 
   const handleAudioClick = (audio) => {
@@ -72,6 +72,13 @@ const AudioList = ({
     label: getStatusLabel(key),
     count: audioList.filter(audio => getAudioStatus(audio) === key).length
   }));
+
+  const safeStatus = (audio) => audioStates[audio]?.[status_key];
+
+  const displayedAudios =
+    showUnlabeledOnly && status_key === 'anno_status'
+      ? audioList.filter((audio) => safeStatus(audio) === 'unlabeled')
+      : audioList;
 
 
   // 获取音频的详细信息（用于悬停提示）
@@ -145,11 +152,62 @@ const AudioList = ({
       <div style={{
         fontSize: '13px',
         color: '#6c757d',
-        marginBottom: '12px',
+        marginBottom: '10px',
         textAlign: 'center'
       }}>
         共 {audioList.length} 个音频文件
+        {showUnlabeledOnly && status_key === 'anno_status' && (
+          <span style={{ marginLeft: '8px', color: '#1976d2' }}>
+            （当前列出 {displayedAudios.length} 条未标注）
+          </span>
+        )}
       </div>
+
+      {status_key === 'anno_status' && (
+        <div style={{
+          marginBottom: '12px',
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '8px',
+          flexWrap: 'wrap'
+        }}>
+          {!showUnlabeledOnly ? (
+            <button
+              type="button"
+              onClick={() => setShowUnlabeledOnly(true)}
+              style={{
+                padding: '6px 14px',
+                fontSize: '13px',
+                cursor: 'pointer',
+                border: '1px solid #1976d2',
+                borderRadius: '6px',
+                background: '#fff',
+                color: '#1976d2',
+                fontWeight: 500
+              }}
+            >
+              仅显示未标注
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowUnlabeledOnly(false)}
+              style={{
+                padding: '6px 14px',
+                fontSize: '13px',
+                cursor: 'pointer',
+                border: '1px solid #6c757d',
+                borderRadius: '6px',
+                background: '#fff',
+                color: '#495057',
+                fontWeight: 500
+              }}
+            >
+              显示全部
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 状态图例 */}
       <div style={{
@@ -204,7 +262,7 @@ const AudioList = ({
         padding: 0,
         margin: 0
       }}>
-        {audioList.map((audio) => {
+        {displayedAudios.map((audio) => {
           const status = getAudioStatus(audio);
           const statusColor = getStatusColor(status);
           const isSelected = currentSelected === audio;
@@ -289,6 +347,16 @@ const AudioList = ({
           fontSize: '14px'
         }}>
           {'请选择数据集和分割'}
+        </div>
+      )}
+      {audioList.length > 0 && displayedAudios.length === 0 && showUnlabeledOnly && status_key === 'anno_status' && (
+        <div style={{
+          textAlign: 'center',
+          color: '#6c757d',
+          padding: '24px 16px',
+          fontSize: '14px'
+        }}>
+          当前没有未标注的音频
         </div>
       )}
     </div>
