@@ -129,6 +129,7 @@ const SpeechAnno = () => {
     setLoading(true);
 
     try {
+      console.log('fetchAnnotation', datasetName, audioId);
       const payload = await fetchAnnotation(datasetName, audioId);
       // 临时兼容旧接口 anno；服务重启后可只保留 seg_datas
       const rawSegList = payload?.seg_datas ?? payload?.anno;
