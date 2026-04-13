@@ -368,12 +368,7 @@ const parseAudioLabelConfigs = (columnParams) => {
     third.forEach((row) => {
         if (!Array.isArray(row) || row.length < 3) return;
         const [key, title, optionsRaw] = row;
-        let options = [];
-        if (Array.isArray(optionsRaw)) {
-            options = optionsRaw.map((o) => String(o).trim()).filter(Boolean);
-        } else if (typeof optionsRaw === 'string') {
-            options = optionsRaw.split(/\s+/).map((s) => s.trim()).filter(Boolean);
-        }
+        const options = optionsRaw.split(' ').filter(option => option.trim() !== '');
         if (key && title && options.length > 0) {
             out.push({ labelKey: key, labelTitle: title, labelOptions: options });
         }
